@@ -18,7 +18,8 @@ This file describes the current state of the game implementation and the assumpt
 - Each level has:
   - a spawn point
   - a list of floating platforms
-  - a goal area that advances to the next level
+  - 5 collectible treats
+  - a goal area that advances to the next level after all treats are collected
 - Levels currently loop back to level 1 after the last level.
 
 ## Controls
@@ -73,7 +74,9 @@ This file describes the current state of the game implementation and the assumpt
 - Level loading currently:
   - updates spawn position
   - destroys old floating platform graphics
+  - destroys old collectible graphics
   - rebuilds current level platforms
+  - rebuilds current level collectibles
   - redraws the goal marker
   - updates the level label
   - resets the player to spawn
@@ -81,12 +84,24 @@ This file describes the current state of the game implementation and the assumpt
 ## Goal System
 
 - A goal area is represented as a rectangular zone in level data.
-- When the player's paw zone intersects the current level goal, the game advances to the next level.
-- The goal is drawn as a yellow rounded rectangle.
+- The goal starts closed.
+- While closed, it blocks the dog from passing through it.
+- The goal opens only after all 5 treats in the current level are collected.
+- When the player's paw zone intersects an open goal, the game advances to the next level.
+- The goal is drawn as:
+  - closed: red gate with bars
+  - open: green gate
+
+## Collectibles
+
+- Every level currently defines exactly 5 treats in level data.
+- Treats are rendered as yellow circular pickups.
+- Pickup is based on overlap with the dog's visible body bounds.
+- Collecting a treat updates the HUD and may open the goal.
 
 ## HUD
 
-- A simple text label shows the current level name and level count.
+- A simple text label shows the current level name, treat progress, and goal state.
 - HUD text is attached to `app.stage`, not `gameWorld`, so it does not scale with the world.
 
 ## Important Current Behaviors

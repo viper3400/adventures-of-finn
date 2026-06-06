@@ -30,10 +30,16 @@ export interface LevelGoal {
   height: number;
 }
 
+export interface CollectibleConfig {
+  x: number;
+  y: number;
+}
+
 export interface LevelDefinition {
   name: string;
   spawnX: number;
   spawnSurfaceY: number;
   platforms: PlatformConfig[];
   goal: LevelGoal;
+  collectibles: CollectibleConfig[];
 }

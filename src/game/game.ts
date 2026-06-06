@@ -11,6 +11,7 @@ import {
 import {
   AIR_TILT_FACTOR,
   AIR_TILT_LIMIT,
+  COLLECTIBLE_RADIUS,
   EDGE_BOUNCE_DISTANCE,
   EDGE_BOUNCE_SMOOTHING,
   GROUND_HEIGHT,
@@ -58,6 +59,8 @@ export async function startGame(): Promise<void> {
 
   const platforms: Platform[] = [];
   const levelPlatformGraphics: Graphics[] = [];
+  const collectibleGraphics: Graphics[] = [];
+  let collectedCount = 0;
   const goalGfx = new Graphics();
   gameWorld.addChild(goalGfx);
   const levelLabel = new Text({
@@ -144,6 +147,54 @@ export async function startGame(): Promise<void> {
     player.sprite.rotation = 0;
   }
 
+  function isGoalOpen(): boolean {
+    return collectedCount >= LEVELS[currentLevelIndex].collectibles.length;
+  }
+
+  function updateHud(): void {
+    const level = LEVELS[currentLevelIndex];
+    const goalState = isGoalOpen() ? "Open" : "Closed";
+    levelLabel.text = `${level.name} / ${LEVELS.length}  Treats ${collectedCount}/${level.collectibles.length}  Goal ${goalState}`;
+  }
+
+  function redrawGoal(): void {
+    const level = LEVELS[currentLevelIndex];
+    goalGfx.clear();
+
+    if (isGoalOpen()) {
+      goalGfx
+        .roundRect(
+          level.goal.x,
+          level.goal.y,
+          level.goal.width,
+          level.goal.height,
+          10,
+        )
+        .fill({ color: 0x63d471 })
+        .stroke({ color: 0x1f7a3d, width: 4 });
+      return;
+    }
+
+    goalGfx
+      .roundRect(
+        level.goal.x,
+        level.goal.y,
+        level.goal.width,
+        level.goal.height,
+        10,
+      )
+      .fill({ color: 0x9f2d2d })
+      .stroke({ color: 0x4d0f0f, width: 4 });
+
+    for (let i = 1; i <= 3; i += 1) {
+      const barX = level.goal.x + (level.goal.width / 4) * i;
+      goalGfx
+        .moveTo(barX, level.goal.y + 6)
+        .lineTo(barX, level.goal.y + level.goal.height - 6)
+        .stroke({ color: 0xf8e7a1, width: 3 });
+    }
+  }
+
   function loadLevel(levelIndex: number): void {
     currentLevelIndex = levelIndex;
     const level = LEVELS[levelIndex];
@@ -157,6 +208,12 @@ export async function startGame(): Promise<void> {
       gfx.destroy();
     });
     levelPlatformGraphics.length = 0;
+    collectibleGraphics.forEach((gfx) => {
+      gameWorld.removeChild(gfx);
+      gfx.destroy();
+    });
+    collectibleGraphics.length = 0;
+    collectedCount = 0;
 
     level.platforms.forEach((config) => {
       const gfx = new Graphics()
@@ -173,19 +230,17 @@ export async function startGame(): Promise<void> {
       });
     });
 
-    goalGfx
-      .clear()
-      .roundRect(
-        level.goal.x,
-        level.goal.y,
-        level.goal.width,
-        level.goal.height,
-        10,
-      )
-      .fill({ color: 0xffd447 })
-      .stroke({ color: 0x8b5a00, width: 4 });
+    level.collectibles.forEach((collectible) => {
+      const gfx = new Graphics()
+        .circle(collectible.x, collectible.y, COLLECTIBLE_RADIUS)
+        .fill({ color: 0xffd447 })
+        .stroke({ color: 0x8b5a00, width: 3 });
+      collectibleGraphics.push(gfx);
+      gameWorld.addChild(gfx);
+    });
 
-    levelLabel.text = `${level.name} / ${LEVELS.length}`;
+    redrawGoal();
+    updateHud();
     resetPlayerToSpawn();
   }
 
@@ -215,6 +270,10 @@ export async function startGame(): Promise<void> {
   }
 
   function checkGoalReached(playerX: number, playerY: number): boolean {
+    if (!isGoalOpen()) {
+      return false;
+    }
+
     const level = LEVELS[currentLevelIndex];
     const feetLeft = playerX - PLAYER_FEET_WIDTH / 2;
     const feetRight = playerX + PLAYER_FEET_WIDTH / 2;
@@ -227,6 +286,75 @@ export async function startGame(): Promise<void> {
       feetBottom > level.goal.y &&
       feetTop < level.goal.y + level.goal.height
     );
+  }
+
+  function collectItems(playerX: number, playerY: number): void {
+    const playerLeft = playerX - PLAYER_WIDTH / 2;
+    const playerRight = playerX + PLAYER_WIDTH / 2;
+    const playerTop = playerY - PLAYER_HEIGHT / 2;
+    const playerBottom = playerY + PLAYER_HEIGHT / 2;
+
+    collectibleGraphics.forEach((gfx, index) => {
+      if (!gfx.visible) {
+        return;
+      }
+
+      const collectible = LEVELS[currentLevelIndex].collectibles[index];
+      const collectibleLeft = collectible.x - COLLECTIBLE_RADIUS;
+      const collectibleRight = collectible.x + COLLECTIBLE_RADIUS;
+      const collectibleTop = collectible.y - COLLECTIBLE_RADIUS;
+      const collectibleBottom = collectible.y + COLLECTIBLE_RADIUS;
+
+      const overlaps =
+        playerRight > collectibleLeft &&
+        playerLeft < collectibleRight &&
+        playerBottom > collectibleTop &&
+        playerTop < collectibleBottom;
+
+      if (!overlaps) {
+        return;
+      }
+
+      gfx.visible = false;
+      collectedCount += 1;
+      redrawGoal();
+      updateHud();
+    });
+  }
+
+  function blockClosedGoal(): void {
+    if (isGoalOpen()) {
+      return;
+    }
+
+    const goal = LEVELS[currentLevelIndex].goal;
+    const playerHalfWidth = PLAYER_WIDTH / 2;
+    const playerHalfHeight = PLAYER_HEIGHT / 2;
+    const playerLeft = player.sprite.x - playerHalfWidth;
+    const playerRight = player.sprite.x + playerHalfWidth;
+    const playerTop = player.sprite.y - playerHalfHeight;
+    const playerBottom = player.sprite.y + playerHalfHeight;
+
+    const overlapsGoal =
+      playerRight > goal.x &&
+      playerLeft < goal.x + goal.width &&
+      playerBottom > goal.y &&
+      playerTop < goal.y + goal.height;
+
+    if (!overlapsGoal) {
+      return;
+    }
+
+    if (player.velocityX >= 0 && player.sprite.x < goal.x + goal.width / 2) {
+      player.sprite.x = goal.x - playerHalfWidth;
+      player.edgeBounceOffsetX = -EDGE_BOUNCE_DISTANCE;
+      return;
+    }
+
+    if (player.velocityX <= 0 && player.sprite.x > goal.x + goal.width / 2) {
+      player.sprite.x = goal.x + goal.width + playerHalfWidth;
+      player.edgeBounceOffsetX = EDGE_BOUNCE_DISTANCE;
+    }
   }
 
   loadLevel(0);
@@ -274,6 +402,8 @@ export async function startGame(): Promise<void> {
         player.velocityY = JUMP_POWER;
       }
 
+      collectItems(player.sprite.x, player.sprite.y);
+
       if (player.isJumping) {
         const facing = Math.sign(playerSprite.scale.x) || 1;
         const targetRotation =
@@ -296,6 +426,8 @@ export async function startGame(): Promise<void> {
         player.sprite.x = WORLD_WIDTH - playerHalfWidth;
         player.edgeBounceOffsetX = -EDGE_BOUNCE_DISTANCE;
       }
+
+      blockClosedGoal();
 
       player.edgeBounceOffsetX +=
         (0 - player.edgeBounceOffsetX) * EDGE_BOUNCE_SMOOTHING;

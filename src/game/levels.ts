@@ -14,6 +14,13 @@ export const LEVELS: LevelDefinition[] = [
       { x: 400, y: WORLD_HEIGHT - 400, w: 150, h: 20 },
     ],
     goal: { x: 1080, y: WORLD_HEIGHT - 330, width: 44, height: 50 },
+    collectibles: [
+      { x: 150, y: WORLD_HEIGHT - 75 },
+      { x: 275, y: WORLD_HEIGHT - 185 },
+      { x: 525, y: WORLD_HEIGHT - 315 },
+      { x: 770, y: WORLD_HEIGHT - 215 },
+      { x: 475, y: WORLD_HEIGHT - 435 },
+    ],
   },
   {
     name: "Level 2",
@@ -28,6 +35,13 @@ export const LEVELS: LevelDefinition[] = [
       { x: 840, y: WORLD_HEIGHT - 140, w: 110, h: 18 },
     ],
     goal: { x: 1105, y: WORLD_HEIGHT - 300, width: 40, height: 50 },
+    collectibles: [
+      { x: 165, y: WORLD_HEIGHT - 75 },
+      { x: 230, y: WORLD_HEIGHT - 155 },
+      { x: 430, y: WORLD_HEIGHT - 235 },
+      { x: 655, y: WORLD_HEIGHT - 335 },
+      { x: 890, y: WORLD_HEIGHT - 415 },
+    ],
   },
   {
     name: "Level 3",
@@ -43,5 +57,12 @@ export const LEVELS: LevelDefinition[] = [
       { x: 1020, y: WORLD_HEIGHT - 300, w: 130, h: 18 },
     ],
     goal: { x: 710, y: WORLD_HEIGHT - 570, width: 44, height: 50 },
+    collectibles: [
+      { x: 210, y: WORLD_HEIGHT - 75 },
+      { x: 280, y: WORLD_HEIGHT - 195 },
+      { x: 490, y: WORLD_HEIGHT - 285 },
+      { x: 710, y: WORLD_HEIGHT - 375 },
+      { x: 915, y: WORLD_HEIGHT - 465 },
+    ],
   },
 ];

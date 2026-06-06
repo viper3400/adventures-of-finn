@@ -16,3 +16,4 @@ export const AIR_TILT_LIMIT = 0.5;
 export const GROUND_TILT_SMOOTHING = 0.5;
 export const EDGE_BOUNCE_DISTANCE = 6;
 export const EDGE_BOUNCE_SMOOTHING = 0.28;
+export const COLLECTIBLE_RADIUS = 12;
