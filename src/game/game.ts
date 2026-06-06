@@ -11,7 +11,6 @@ import {
 import {
   AIR_TILT_FACTOR,
   AIR_TILT_LIMIT,
-  COLLECTIBLE_RADIUS,
   EDGE_BOUNCE_DISTANCE,
   EDGE_BOUNCE_SMOOTHING,
   GROUND_HEIGHT,
@@ -94,8 +93,12 @@ export async function startGame(): Promise<void> {
 
   const platforms: Platform[] = [];
   const levelPlatformGraphics: Graphics[] = [];
-  const collectibleGraphics: Graphics[] = [];
+  const collectibleSprites: Sprite[] = [];
   const debugTexts: Text[] = [];
+  const collectibleTextures = new Map<
+    string,
+    Awaited<ReturnType<typeof Assets.load>>
+  >();
   let collectedCount = 0;
   let currentGoal: ResolvedGoal | null = null;
   let currentCollectibles: ResolvedCollectible[] = [];
@@ -276,6 +279,21 @@ export async function startGame(): Promise<void> {
   );
   const goalClosedTexture = await Assets.load("/assets/door-closed.svg");
   const goalOpenTexture = await Assets.load("/assets/door-open.svg");
+  const collectibleAssetPaths = Array.from(
+    new Set(
+      LEVELS.flatMap((level) =>
+        level.stages.map((stage) => stage.collectibleVisual.assetPath),
+      ),
+    ),
+  );
+  const collectibleTextureEntries = await Promise.all(
+    collectibleAssetPaths.map(
+      async (assetPath) => [assetPath, await Assets.load(assetPath)] as const,
+    ),
+  );
+  collectibleTextureEntries.forEach(([assetPath, texture]) => {
+    collectibleTextures.set(assetPath, texture);
+  });
   const playerScaleX = PLAYER_WIDTH / playerTexture.width;
   const playerScaleY = PLAYER_HEIGHT / playerTexture.height;
   transitionDog = new Sprite(playerTexture);
@@ -364,7 +382,9 @@ export async function startGame(): Promise<void> {
       const platform = getAnchorPlatformBounds(stage, collectible.platform);
       return {
         x: platform.x + collectible.offsetX,
-        y: platform.y - COLLECTIBLE_RADIUS - 8,
+        y: platform.y - stage.collectibleVisual.height / 2 - 8,
+        width: stage.collectibleVisual.width,
+        height: stage.collectibleVisual.height,
       };
     });
   }
@@ -451,11 +471,11 @@ export async function startGame(): Promise<void> {
       gfx.destroy();
     });
     levelPlatformGraphics.length = 0;
-    collectibleGraphics.forEach((gfx) => {
-      gameWorld.removeChild(gfx);
-      gfx.destroy();
+    collectibleSprites.forEach((sprite) => {
+      gameWorld.removeChild(sprite);
+      sprite.destroy();
     });
-    collectibleGraphics.length = 0;
+    collectibleSprites.length = 0;
     collectedCount = 0;
 
     stage.platforms.forEach((config) => {
@@ -474,13 +494,23 @@ export async function startGame(): Promise<void> {
       });
     });
 
+    const collectibleTexture = collectibleTextures.get(
+      stage.collectibleVisual.assetPath,
+    );
+    if (!collectibleTexture) {
+      throw new Error(
+        `Missing collectible texture "${stage.collectibleVisual.assetPath}"`,
+      );
+    }
+
     currentCollectibles.forEach((collectible) => {
-      const gfx = new Graphics()
-        .circle(collectible.x, collectible.y, COLLECTIBLE_RADIUS)
-        .fill({ color: 0xffd447 })
-        .stroke({ color: 0x8b5a00, width: 3 });
-      collectibleGraphics.push(gfx);
-      gameWorld.addChild(gfx);
+      const sprite = new Sprite(collectibleTexture);
+      sprite.anchor.set(0.5);
+      sprite.position.set(collectible.x, collectible.y);
+      sprite.width = collectible.width;
+      sprite.height = collectible.height;
+      collectibleSprites.push(sprite);
+      gameWorld.addChild(sprite);
     });
 
     rebuildDebugOverlay(stage);
@@ -542,16 +572,16 @@ export async function startGame(): Promise<void> {
     const playerTop = playerY - PLAYER_HEIGHT / 2;
     const playerBottom = playerY + PLAYER_HEIGHT / 2;
 
-    collectibleGraphics.forEach((gfx, index) => {
-      if (!gfx.visible) {
+    collectibleSprites.forEach((sprite, index) => {
+      if (!sprite.visible) {
         return;
       }
 
       const collectible = currentCollectibles[index];
-      const collectibleLeft = collectible.x - COLLECTIBLE_RADIUS;
-      const collectibleRight = collectible.x + COLLECTIBLE_RADIUS;
-      const collectibleTop = collectible.y - COLLECTIBLE_RADIUS;
-      const collectibleBottom = collectible.y + COLLECTIBLE_RADIUS;
+      const collectibleLeft = collectible.x - collectible.width / 2;
+      const collectibleRight = collectible.x + collectible.width / 2;
+      const collectibleTop = collectible.y - collectible.height / 2;
+      const collectibleBottom = collectible.y + collectible.height / 2;
 
       const overlaps =
         playerRight > collectibleLeft &&
@@ -563,7 +593,7 @@ export async function startGame(): Promise<void> {
         return;
       }
 
-      gfx.visible = false;
+      sprite.visible = false;
       collectedCount += 1;
       redrawGoal();
       updateHud();

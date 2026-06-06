@@ -37,6 +37,12 @@ export interface LevelGoal extends PlatformAnchor {
 
 export type CollectibleConfig = PlatformAnchor;
 
+export interface CollectibleVisualConfig {
+  assetPath: string;
+  width: number;
+  height: number;
+}
+
 export interface ResolvedGoal {
   x: number;
   y: number;
@@ -47,12 +53,15 @@ export interface ResolvedGoal {
 export interface ResolvedCollectible {
   x: number;
   y: number;
+  width: number;
+  height: number;
 }
 
 export interface StageDefinition {
   name: string;
   spawnX: number;
   spawnSurfaceY: number;
+  collectibleVisual: CollectibleVisualConfig;
   platforms: PlatformConfig[];
   goal: LevelGoal;
   collectibles: CollectibleConfig[];

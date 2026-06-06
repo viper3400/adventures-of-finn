@@ -78,6 +78,10 @@ This file describes the current state of the game implementation and the assumpt
   - `introText`
   - `completionText`
 - Each stage is defined by the `StageDefinition` type.
+- Each stage owns its collectible visual via `collectibleVisual`:
+  - `assetPath`
+  - `width`
+  - `height`
 - The active stage is loaded by `loadStage()` in `src/game/game.ts`.
 - Stage loading currently:
   - updates spawn position
@@ -108,7 +112,7 @@ This file describes the current state of the game implementation and the assumpt
 ## Collectibles
 
 - Every level currently defines exactly 5 treats in level data.
-- Treats are rendered as yellow circular pickups.
+- Treats are rendered from the current stage's configured SVG asset.
 - Pickup is based on overlap with the dog's visible body bounds.
 - Collecting a treat updates the HUD and may open the goal.
 
