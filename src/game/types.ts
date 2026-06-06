@@ -30,6 +30,8 @@ export interface PlatformAnchor {
   offsetX: number;
 }
 
+export type StageMode = "collect" | "transport";
+
 export interface LevelGoal extends PlatformAnchor {
   width: number;
   height: number;
@@ -38,6 +40,12 @@ export interface LevelGoal extends PlatformAnchor {
 export type CollectibleConfig = PlatformAnchor;
 
 export interface CollectibleVisualConfig {
+  assetPath: string;
+  width: number;
+  height: number;
+}
+
+export interface StoreDefinition extends PlatformAnchor {
   assetPath: string;
   width: number;
   height: number;
@@ -57,14 +65,24 @@ export interface ResolvedCollectible {
   height: number;
 }
 
+export interface ResolvedStore {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  assetPath: string;
+}
+
 export interface StageDefinition {
   name: string;
+  mode: StageMode;
   spawnX: number;
   spawnSurfaceY: number;
   collectibleVisual: CollectibleVisualConfig;
   platforms: PlatformConfig[];
   goal: LevelGoal;
   collectibles: CollectibleConfig[];
+  store?: StoreDefinition;
 }
 
 export interface LevelDefinition {

@@ -11,6 +11,7 @@ export const LEVELS: LevelDefinition[] = [
     stages: [
       {
         name: "Stage 1",
+        mode: "collect",
         spawnX: 100,
         spawnSurfaceY: WORLD_HEIGHT - GROUND_HEIGHT,
         collectibleVisual: {
@@ -36,6 +37,7 @@ export const LEVELS: LevelDefinition[] = [
       },
       {
         name: "Stage 2",
+        mode: "collect",
         spawnX: 120,
         spawnSurfaceY: WORLD_HEIGHT - GROUND_HEIGHT,
         collectibleVisual: {
@@ -63,6 +65,7 @@ export const LEVELS: LevelDefinition[] = [
       },
       {
         name: "Stage 3",
+        mode: "collect",
         spawnX: 150,
         spawnSurfaceY: WORLD_HEIGHT - GROUND_HEIGHT,
         collectibleVisual: {
@@ -88,6 +91,46 @@ export const LEVELS: LevelDefinition[] = [
           { platform: 4, offsetX: 55 },
           { platform: 6, offsetX: 55 },
           { platform: 7, offsetX: 55 },
+        ],
+      },
+    ],
+  },
+  {
+    name: "Socken-Sause",
+    introText:
+      "Diesmal nur sammeln reicht nicht. Ich muss jede Wurst ins Laedeli tragen.",
+    completionText:
+      "Alles geliefert. Das war anstrengend, aber sehr professionell.",
+    stages: [
+      {
+        name: "Stage 1",
+        mode: "transport",
+        spawnX: 120,
+        spawnSurfaceY: WORLD_HEIGHT - GROUND_HEIGHT,
+        collectibleVisual: {
+          assetPath: "/assets/socks.svg",
+          width: 40,
+          height: 40,
+        },
+        store: {
+          platform: "ground",
+          offsetX: 1040,
+          assetPath: "/assets/laundry-washer.svg",
+          width: 110,
+          height: 110,
+        },
+        platforms: [
+          { id: 1, x: 260, y: WORLD_HEIGHT - 150, w: 160, h: 20 },
+          { id: 2, x: 520, y: WORLD_HEIGHT - 260, w: 140, h: 20 },
+          { id: 3, x: 760, y: WORLD_HEIGHT - 190, w: 150, h: 20 },
+          { id: 4, x: 930, y: WORLD_HEIGHT - 290, w: 170, h: 20 },
+        ],
+        goal: { platform: 4, offsetX: 135, width: 64, height: 64 },
+        collectibles: [
+          { platform: "ground", offsetX: 260 },
+          { platform: 1, offsetX: 85 },
+          { platform: 2, offsetX: 70 },
+          { platform: 3, offsetX: 82 },
         ],
       },
     ],

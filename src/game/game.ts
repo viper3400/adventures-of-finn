@@ -34,8 +34,17 @@ import type {
   Player,
   ResolvedCollectible,
   ResolvedGoal,
+  ResolvedStore,
   StageDefinition,
 } from "./types";
+
+interface DeliveryEffect {
+  ageMs: number;
+  durationMs: number;
+  gfx: Graphics;
+  x: number;
+  y: number;
+}
 
 export async function startGame(): Promise<void> {
   const keys: Record<string, boolean> = {};
@@ -57,6 +66,9 @@ export async function startGame(): Promise<void> {
     if (key === "l" && !e.repeat) {
       debugVisible = !debugVisible;
       debugLayer.visible = debugVisible;
+    }
+    if (key === "s" && !e.repeat) {
+      jumpToNextStageDebug();
     }
     if (key === " " && !e.repeat && transitionOverlay.visible) {
       closeTransition();
@@ -90,18 +102,27 @@ export async function startGame(): Promise<void> {
   let onTransitionComplete: (() => void) | null = null;
   let transitionDog: Sprite | null = null;
   let transitionSpeechBubble: Sprite | null = null;
+  let storeSprite: Sprite | null = null;
+  let carriedCollectibleSprite: Sprite | null = null;
+  let carriedCollectibleIndex: number | null = null;
 
   const platforms: Platform[] = [];
   const levelPlatformGraphics: Graphics[] = [];
   const collectibleSprites: Sprite[] = [];
+  const deliveryEffects: DeliveryEffect[] = [];
   const debugTexts: Text[] = [];
   const collectibleTextures = new Map<
     string,
     Awaited<ReturnType<typeof Assets.load>>
   >();
-  let collectedCount = 0;
+  const storeTextures = new Map<
+    string,
+    Awaited<ReturnType<typeof Assets.load>>
+  >();
+  let progressCount = 0;
   let currentGoal: ResolvedGoal | null = null;
   let currentCollectibles: ResolvedCollectible[] = [];
+  let currentStore: ResolvedStore | null = null;
   const levelLabel = new Text({
     text: "",
     style: {
@@ -294,6 +315,23 @@ export async function startGame(): Promise<void> {
   collectibleTextureEntries.forEach(([assetPath, texture]) => {
     collectibleTextures.set(assetPath, texture);
   });
+  const storeAssetPaths = Array.from(
+    new Set(
+      LEVELS.flatMap((level) =>
+        level.stages
+          .map((stage) => stage.store?.assetPath)
+          .filter((assetPath): assetPath is string => Boolean(assetPath)),
+      ),
+    ),
+  );
+  const storeTextureEntries = await Promise.all(
+    storeAssetPaths.map(
+      async (assetPath) => [assetPath, await Assets.load(assetPath)] as const,
+    ),
+  );
+  storeTextureEntries.forEach(([assetPath, texture]) => {
+    storeTextures.set(assetPath, texture);
+  });
   const playerScaleX = PLAYER_WIDTH / playerTexture.width;
   const playerScaleY = PLAYER_HEIGHT / playerTexture.height;
   transitionDog = new Sprite(playerTexture);
@@ -325,6 +363,7 @@ export async function startGame(): Promise<void> {
   }
 
   function resetPlayerToSpawn(): void {
+    dropCarriedCollectible();
     player.sprite.position.set(spawnX, spawnY);
     player.velocityX = 0;
     player.velocityY = 0;
@@ -390,7 +429,29 @@ export async function startGame(): Promise<void> {
   }
 
   function isGoalOpen(): boolean {
-    return collectedCount >= getCurrentStage().collectibles.length;
+    return progressCount >= getCurrentStage().collectibles.length;
+  }
+
+  function resolveStore(stage: StageDefinition): ResolvedStore | null {
+    if (!stage.store) {
+      return null;
+    }
+
+    const platform = getAnchorPlatformBounds(stage, stage.store.platform);
+    const x = platform.x + stage.store.offsetX - stage.store.width / 2;
+    const y = platform.y - stage.store.height;
+
+    return {
+      x,
+      y,
+      width: stage.store.width,
+      height: stage.store.height,
+      assetPath: stage.store.assetPath,
+    };
+  }
+
+  function isTransportStage(stage = getCurrentStage()): boolean {
+    return stage.mode === "transport";
   }
 
   function clearDebugOverlay(): void {
@@ -441,7 +502,57 @@ export async function startGame(): Promise<void> {
     const level = getCurrentLevel();
     const stage = getCurrentStage();
     const goalState = isGoalOpen() ? "Open" : "Closed";
-    levelLabel.text = `Level ${currentLevelIndex + 1}: ${level.name} - ${stage.name}  Treats ${collectedCount}/${stage.collectibles.length}  Goal ${goalState}`;
+    const modeStatus = isTransportStage(stage)
+      ? `Delivered ${progressCount}/${stage.collectibles.length} Carrying ${carriedCollectibleIndex === null ? "No" : "Yes"}`
+      : `Treats ${progressCount}/${stage.collectibles.length}`;
+    levelLabel.text = `Level ${currentLevelIndex + 1}: ${level.name} - ${stage.name}  ${modeStatus}  Goal ${goalState}`;
+  }
+
+  function clearDeliveryEffects(): void {
+    deliveryEffects.forEach((effect) => {
+      gameWorld.removeChild(effect.gfx);
+      effect.gfx.destroy();
+    });
+    deliveryEffects.length = 0;
+  }
+
+  function spawnDeliverySuccessEffect(x: number, y: number): void {
+    const gfx = new Graphics();
+    gameWorld.addChild(gfx);
+    deliveryEffects.push({
+      ageMs: 0,
+      durationMs: 520,
+      gfx,
+      x,
+      y,
+    });
+  }
+
+  function updateDeliveryEffects(deltaMs: number): void {
+    for (let index = deliveryEffects.length - 1; index >= 0; index -= 1) {
+      const effect = deliveryEffects[index];
+      effect.ageMs += deltaMs;
+
+      const progress = Math.min(1, effect.ageMs / effect.durationMs);
+      const alpha = 1 - progress;
+      const ringRadius = 16 + progress * 28;
+      const sparkleRadius = 10 + progress * 18;
+
+      effect.gfx
+        .clear()
+        .circle(effect.x, effect.y, ringRadius)
+        .stroke({ color: 0xfff2a8, width: 4, alpha })
+        .star(effect.x, effect.y, 6, sparkleRadius, sparkleRadius * 0.45, 0)
+        .fill({ color: 0xffd447, alpha: alpha * 0.45 });
+
+      if (effect.ageMs < effect.durationMs) {
+        continue;
+      }
+
+      gameWorld.removeChild(effect.gfx);
+      effect.gfx.destroy();
+      deliveryEffects.splice(index, 1);
+    }
   }
 
   function redrawGoal(): void {
@@ -464,6 +575,7 @@ export async function startGame(): Promise<void> {
     spawnY = getStandingY(stage.spawnSurfaceY);
     currentGoal = resolveGoal(stage);
     currentCollectibles = resolveCollectibles(stage);
+    currentStore = resolveStore(stage);
 
     platforms.splice(1);
     levelPlatformGraphics.forEach((gfx) => {
@@ -476,7 +588,19 @@ export async function startGame(): Promise<void> {
       sprite.destroy();
     });
     collectibleSprites.length = 0;
-    collectedCount = 0;
+    if (storeSprite) {
+      gameWorld.removeChild(storeSprite);
+      storeSprite.destroy();
+      storeSprite = null;
+    }
+    if (carriedCollectibleSprite) {
+      gameWorld.removeChild(carriedCollectibleSprite);
+      carriedCollectibleSprite.destroy();
+      carriedCollectibleSprite = null;
+    }
+    clearDeliveryEffects();
+    carriedCollectibleIndex = null;
+    progressCount = 0;
 
     stage.platforms.forEach((config) => {
       const gfx = new Graphics()
@@ -512,6 +636,25 @@ export async function startGame(): Promise<void> {
       collectibleSprites.push(sprite);
       gameWorld.addChild(sprite);
     });
+
+    if (currentStore) {
+      const texture = storeTextures.get(currentStore.assetPath);
+      if (!texture) {
+        throw new Error(`Missing store texture "${currentStore.assetPath}"`);
+      }
+      storeSprite = new Sprite(texture);
+      storeSprite.position.set(currentStore.x, currentStore.y);
+      storeSprite.width = currentStore.width;
+      storeSprite.height = currentStore.height;
+      gameWorld.addChild(storeSprite);
+    }
+
+    carriedCollectibleSprite = new Sprite(collectibleTexture);
+    carriedCollectibleSprite.anchor.set(0.5);
+    carriedCollectibleSprite.visible = false;
+    carriedCollectibleSprite.width = stage.collectibleVisual.width;
+    carriedCollectibleSprite.height = stage.collectibleVisual.height;
+    gameWorld.addChild(carriedCollectibleSprite);
 
     rebuildDebugOverlay(stage);
     redrawGoal();
@@ -593,11 +736,90 @@ export async function startGame(): Promise<void> {
         return;
       }
 
+      if (isTransportStage()) {
+        if (carriedCollectibleIndex !== null) {
+          return;
+        }
+
+        sprite.visible = false;
+        carriedCollectibleIndex = index;
+        if (carriedCollectibleSprite) {
+          carriedCollectibleSprite.visible = true;
+        }
+        updateHud();
+        return;
+      }
+
       sprite.visible = false;
-      collectedCount += 1;
+      progressCount += 1;
       redrawGoal();
       updateHud();
     });
+  }
+
+  function dropCarriedCollectible(): void {
+    if (carriedCollectibleIndex === null) {
+      return;
+    }
+
+    const sprite = collectibleSprites[carriedCollectibleIndex];
+    if (sprite) {
+      sprite.visible = true;
+    }
+    carriedCollectibleIndex = null;
+    if (carriedCollectibleSprite) {
+      carriedCollectibleSprite.visible = false;
+    }
+    updateHud();
+  }
+
+  function updateCarriedCollectiblePosition(): void {
+    if (!carriedCollectibleSprite || carriedCollectibleIndex === null) {
+      return;
+    }
+
+    const facing = Math.sign(playerSprite.scale.x) || 1;
+    carriedCollectibleSprite.position.set(
+      player.sprite.x + facing * 55,
+      player.sprite.y - 10,
+    );
+  }
+
+  function deliverCarriedCollectible(playerX: number, playerY: number): void {
+    if (
+      !isTransportStage() ||
+      carriedCollectibleIndex === null ||
+      !currentStore
+    ) {
+      return;
+    }
+
+    const playerLeft = playerX - PLAYER_WIDTH / 2;
+    const playerRight = playerX + PLAYER_WIDTH / 2;
+    const playerTop = playerY - PLAYER_HEIGHT / 2;
+    const playerBottom = playerY + PLAYER_HEIGHT / 2;
+
+    const overlapsStore =
+      playerRight > currentStore.x &&
+      playerLeft < currentStore.x + currentStore.width &&
+      playerBottom > currentStore.y &&
+      playerTop < currentStore.y + currentStore.height;
+
+    if (!overlapsStore) {
+      return;
+    }
+
+    carriedCollectibleIndex = null;
+    if (carriedCollectibleSprite) {
+      carriedCollectibleSprite.visible = false;
+    }
+    spawnDeliverySuccessEffect(
+      currentStore.x + currentStore.width / 2,
+      currentStore.y + currentStore.height / 2 - 18,
+    );
+    progressCount += 1;
+    redrawGoal();
+    updateHud();
   }
 
   function blockClosedGoal(): void {
@@ -654,6 +876,22 @@ export async function startGame(): Promise<void> {
     );
   }
 
+  function jumpToNextStageDebug(): void {
+    if (transitionOverlay.visible) {
+      closeTransition();
+    }
+
+    const level = getCurrentLevel();
+    const hasNextStage = currentStageIndex + 1 < level.stages.length;
+    if (hasNextStage) {
+      loadStage(currentLevelIndex, currentStageIndex + 1);
+      return;
+    }
+
+    const nextLevelIndex = (currentLevelIndex + 1) % LEVELS.length;
+    loadStage(nextLevelIndex, 0);
+  }
+
   loadStage(0, 0);
   showLevelIntro(0);
 
@@ -662,6 +900,8 @@ export async function startGame(): Promise<void> {
       if (transitionOverlay.visible) {
         return;
       }
+
+      updateDeliveryEffects(app.ticker.deltaMS);
 
       const previousY = player.sprite.y;
 
@@ -710,6 +950,8 @@ export async function startGame(): Promise<void> {
       }
 
       collectItems(player.sprite.x, player.sprite.y);
+      deliverCarriedCollectible(player.sprite.x, player.sprite.y);
+      updateCarriedCollectiblePosition();
 
       if (player.isJumping) {
         const facing = Math.sign(playerSprite.scale.x) || 1;

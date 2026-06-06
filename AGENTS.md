@@ -18,6 +18,9 @@ This file describes the current state of the game implementation and the assumpt
 - The progression model is:
   - a level contains one or more stages
   - each stage has its own spawn point, platforms, collectibles, and goal
+- Each stage also has a `mode`:
+  - `collect`: pickups count immediately on contact
+  - `transport`: pickups must be carried to a store before they count
 - The current content is:
   - `Level 1`
   - `Stage 1`
@@ -31,6 +34,7 @@ This file describes the current state of the game implementation and the assumpt
 - Move right: `ArrowRight` or `D`
 - Jump: `Space`, `W`, or `ArrowUp`
 - Toggle platform debug labels: `L`
+- Jump to the next stage immediately for debugging: `S`
 
 ## World Model
 
@@ -82,6 +86,7 @@ This file describes the current state of the game implementation and the assumpt
   - `assetPath`
   - `width`
   - `height`
+- Transport stages additionally define a platform-anchored `store`.
 - The active stage is loaded by `loadStage()` in `src/game/game.ts`.
 - Stage loading currently:
   - updates spawn position
@@ -114,7 +119,8 @@ This file describes the current state of the game implementation and the assumpt
 - Every level currently defines exactly 5 treats in level data.
 - Treats are rendered from the current stage's configured SVG asset.
 - Pickup is based on overlap with the dog's visible body bounds.
-- Collecting a treat updates the HUD and may open the goal.
+- In `collect` mode, touching a treat consumes it immediately.
+- In `transport` mode, the dog carries one item at a time in its mouth and only gets credit after touching the store.
 
 ## HUD
 
