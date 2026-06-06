@@ -1,6 +1,7 @@
 import type { Graphics, Sprite } from "pixi.js";
 
 export interface Platform {
+  id: "ground" | number;
   x: number;
   y: number;
   width: number;
@@ -17,20 +18,33 @@ export interface Player {
 }
 
 export interface PlatformConfig {
+  id: number;
   x: number;
   y: number;
   w: number;
   h: number;
 }
 
-export interface LevelGoal {
+export interface PlatformAnchor {
+  platform: "ground" | number;
+  offsetX: number;
+}
+
+export interface LevelGoal extends PlatformAnchor {
+  width: number;
+  height: number;
+}
+
+export type CollectibleConfig = PlatformAnchor;
+
+export interface ResolvedGoal {
   x: number;
   y: number;
   width: number;
   height: number;
 }
 
-export interface CollectibleConfig {
+export interface ResolvedCollectible {
   x: number;
   y: number;
 }

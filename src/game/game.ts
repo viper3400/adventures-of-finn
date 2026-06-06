@@ -30,7 +30,13 @@ import {
   WORLD_WIDTH,
 } from "./constants";
 import { LEVELS } from "./levels";
-import type { Platform, Player, StageDefinition } from "./types";
+import type {
+  Platform,
+  Player,
+  ResolvedCollectible,
+  ResolvedGoal,
+  StageDefinition,
+} from "./types";
 
 export async function startGame(): Promise<void> {
   const keys: Record<string, boolean> = {};
@@ -39,8 +45,15 @@ export async function startGame(): Promise<void> {
   await app.init({ background: "#87CEEB", resizeTo: window, antialias: true });
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
+  let debugVisible = false;
+
   window.addEventListener("keydown", (e) => {
-    keys[e.key.toLowerCase()] = true;
+    const key = e.key.toLowerCase();
+    keys[key] = true;
+    if (key === "l" && !e.repeat) {
+      debugVisible = !debugVisible;
+      debugLayer.visible = debugVisible;
+    }
   });
   window.addEventListener("keyup", (e) => {
     keys[e.key.toLowerCase()] = false;
@@ -48,6 +61,9 @@ export async function startGame(): Promise<void> {
 
   const gameWorld = new Container();
   app.stage.addChild(gameWorld);
+  const debugLayer = new Container();
+  debugLayer.visible = debugVisible;
+  gameWorld.addChild(debugLayer);
 
   const groundY = WORLD_HEIGHT - GROUND_HEIGHT;
   let groundLeft = 0;
@@ -63,7 +79,10 @@ export async function startGame(): Promise<void> {
   const platforms: Platform[] = [];
   const levelPlatformGraphics: Graphics[] = [];
   const collectibleGraphics: Graphics[] = [];
+  const debugTexts: Text[] = [];
   let collectedCount = 0;
+  let currentGoal: ResolvedGoal | null = null;
+  let currentCollectibles: ResolvedCollectible[] = [];
   const levelLabel = new Text({
     text: "",
     style: {
@@ -81,6 +100,7 @@ export async function startGame(): Promise<void> {
     .fill({ color: 0x8b4513 });
   gameWorld.addChild(groundGfx);
   platforms.push({
+    id: "ground",
     x: groundLeft,
     y: groundY,
     width: groundWidth,
@@ -112,6 +132,10 @@ export async function startGame(): Promise<void> {
 
     platforms[0].x = groundLeft;
     platforms[0].width = groundWidth;
+
+    if (currentGoal) {
+      rebuildDebugOverlay(getCurrentStage());
+    }
   }
 
   const playerTexture = await Assets.load("/assets/image_comic.png");
@@ -160,8 +184,98 @@ export async function startGame(): Promise<void> {
     return getCurrentLevel().stages[currentStageIndex];
   }
 
+  function getAnchorPlatformBounds(
+    stage: StageDefinition,
+    anchorPlatform: "ground" | number,
+  ): { x: number; y: number; width: number; height: number } {
+    if (anchorPlatform === "ground") {
+      return {
+        x: groundLeft,
+        y: groundY,
+        width: groundWidth,
+        height: GROUND_HEIGHT,
+      };
+    }
+
+    const platform = stage.platforms.find(
+      (platformConfig) => platformConfig.id === anchorPlatform,
+    );
+    if (!platform) {
+      throw new Error(`Unknown platform anchor "${anchorPlatform}"`);
+    }
+
+    return {
+      x: platform.x,
+      y: platform.y,
+      width: platform.w,
+      height: platform.h,
+    };
+  }
+
+  function resolveGoal(stage: StageDefinition): ResolvedGoal {
+    const platform = getAnchorPlatformBounds(stage, stage.goal.platform);
+    const x = platform.x + stage.goal.offsetX - stage.goal.width / 2;
+    const y = platform.y - stage.goal.height;
+
+    return { x, y, width: stage.goal.width, height: stage.goal.height };
+  }
+
+  function resolveCollectibles(stage: StageDefinition): ResolvedCollectible[] {
+    return stage.collectibles.map((collectible) => {
+      const platform = getAnchorPlatformBounds(stage, collectible.platform);
+      return {
+        x: platform.x + collectible.offsetX,
+        y: platform.y - COLLECTIBLE_RADIUS - 8,
+      };
+    });
+  }
+
   function isGoalOpen(): boolean {
     return collectedCount >= getCurrentStage().collectibles.length;
+  }
+
+  function clearDebugOverlay(): void {
+    debugTexts.forEach((text) => {
+      debugLayer.removeChild(text);
+      text.destroy();
+    });
+    debugTexts.length = 0;
+  }
+
+  function createDebugLabel(text: string, x: number, y: number): void {
+    const label = new Text({
+      text,
+      style: {
+        fill: 0xffffff,
+        fontSize: 14,
+        fontWeight: "700",
+        stroke: { color: 0x102030, width: 4 },
+      },
+    });
+    label.position.set(x, y);
+    debugTexts.push(label);
+    debugLayer.addChild(label);
+  }
+
+  function rebuildDebugOverlay(stage: StageDefinition): void {
+    clearDebugOverlay();
+
+    createDebugLabel(
+      `P0 x:${Math.round(groundLeft)} y:${Math.round(groundY)}`,
+      groundLeft + 12,
+      groundY - 28,
+    );
+
+    stage.platforms.forEach((platform) => {
+      createDebugLabel(
+        `P${platform.id} x:${platform.x} y:${platform.y}`,
+        platform.x + 8,
+        platform.y - 28,
+      );
+    });
+
+    debugLayer.visible = debugVisible;
+    gameWorld.setChildIndex(debugLayer, gameWorld.children.length - 1);
   }
 
   function updateHud(): void {
@@ -172,11 +286,14 @@ export async function startGame(): Promise<void> {
   }
 
   function redrawGoal(): void {
-    const stage = getCurrentStage();
+    if (!currentGoal) {
+      return;
+    }
+
     goalSprite.texture = isGoalOpen() ? goalOpenTexture : goalClosedTexture;
-    goalSprite.position.set(stage.goal.x, stage.goal.y);
-    goalSprite.width = stage.goal.width;
-    goalSprite.height = stage.goal.height;
+    goalSprite.position.set(currentGoal.x, currentGoal.y);
+    goalSprite.width = currentGoal.width;
+    goalSprite.height = currentGoal.height;
   }
 
   function loadStage(levelIndex: number, stageIndex: number): void {
@@ -186,6 +303,8 @@ export async function startGame(): Promise<void> {
 
     spawnX = stage.spawnX;
     spawnY = getStandingY(stage.spawnSurfaceY);
+    currentGoal = resolveGoal(stage);
+    currentCollectibles = resolveCollectibles(stage);
 
     platforms.splice(1);
     levelPlatformGraphics.forEach((gfx) => {
@@ -207,6 +326,7 @@ export async function startGame(): Promise<void> {
       levelPlatformGraphics.push(gfx);
       gameWorld.addChildAt(gfx, 0);
       platforms.push({
+        id: config.id,
         x: config.x,
         y: config.y,
         width: config.w,
@@ -215,7 +335,7 @@ export async function startGame(): Promise<void> {
       });
     });
 
-    stage.collectibles.forEach((collectible) => {
+    currentCollectibles.forEach((collectible) => {
       const gfx = new Graphics()
         .circle(collectible.x, collectible.y, COLLECTIBLE_RADIUS)
         .fill({ color: 0xffd447 })
@@ -224,6 +344,7 @@ export async function startGame(): Promise<void> {
       gameWorld.addChild(gfx);
     });
 
+    rebuildDebugOverlay(stage);
     redrawGoal();
     updateHud();
     resetPlayerToSpawn();
@@ -259,17 +380,20 @@ export async function startGame(): Promise<void> {
       return false;
     }
 
-    const stage = getCurrentStage();
     const feetLeft = playerX - PLAYER_FEET_WIDTH / 2;
     const feetRight = playerX + PLAYER_FEET_WIDTH / 2;
     const feetTop = playerY + PLAYER_FEET_OFFSET_Y - PLAYER_FEET_HEIGHT / 2;
     const feetBottom = playerY + PLAYER_FEET_OFFSET_Y + PLAYER_FEET_HEIGHT / 2;
 
+    if (!currentGoal) {
+      return false;
+    }
+
     return (
-      feetRight > stage.goal.x &&
-      feetLeft < stage.goal.x + stage.goal.width &&
-      feetBottom > stage.goal.y &&
-      feetTop < stage.goal.y + stage.goal.height
+      feetRight > currentGoal.x &&
+      feetLeft < currentGoal.x + currentGoal.width &&
+      feetBottom > currentGoal.y &&
+      feetTop < currentGoal.y + currentGoal.height
     );
   }
 
@@ -284,7 +408,7 @@ export async function startGame(): Promise<void> {
         return;
       }
 
-      const collectible = getCurrentStage().collectibles[index];
+      const collectible = currentCollectibles[index];
       const collectibleLeft = collectible.x - COLLECTIBLE_RADIUS;
       const collectibleRight = collectible.x + COLLECTIBLE_RADIUS;
       const collectibleTop = collectible.y - COLLECTIBLE_RADIUS;
@@ -312,7 +436,11 @@ export async function startGame(): Promise<void> {
       return;
     }
 
-    const goal = getCurrentStage().goal;
+    if (!currentGoal) {
+      return;
+    }
+
+    const goal = currentGoal;
     const playerHalfWidth = PLAYER_WIDTH / 2;
     const playerHalfHeight = PLAYER_HEIGHT / 2;
     const playerLeft = player.sprite.x - playerHalfWidth;

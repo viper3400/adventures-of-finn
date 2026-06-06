@@ -30,6 +30,7 @@ This file describes the current state of the game implementation and the assumpt
 - Move left: `ArrowLeft` or `A`
 - Move right: `ArrowRight` or `D`
 - Jump: `Space`, `W`, or `ArrowUp`
+- Toggle platform debug labels: `L`
 
 ## World Model
 
@@ -116,8 +117,11 @@ This file describes the current state of the game implementation and the assumpt
 - Falling below the world resets the player to the current level spawn.
 - The ground platform is special:
   - it is stored as `platforms[0]`
+  - it has runtime id `ground`
   - resize logic mutates its `x` and `width`
 - Floating platforms are rebuilt when levels change.
+- Floating platforms use numeric ids inside each stage definition.
+- Pressing `L` toggles debug labels that show each platform id and its `x/y` position.
 
 ## If You Change Physics
 
