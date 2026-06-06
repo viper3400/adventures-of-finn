@@ -35,11 +35,16 @@ export interface CollectibleConfig {
   y: number;
 }
 
-export interface LevelDefinition {
+export interface StageDefinition {
   name: string;
   spawnX: number;
   spawnSurfaceY: number;
   platforms: PlatformConfig[];
   goal: LevelGoal;
   collectibles: CollectibleConfig[];
+}
+
+export interface LevelDefinition {
+  name: string;
+  stages: StageDefinition[];
 }

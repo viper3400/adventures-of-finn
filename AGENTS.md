@@ -15,12 +15,15 @@ This file describes the current state of the game implementation and the assumpt
 - The game is a side-view platformer built with PixiJS v8.
 - The main character is a dog sprite loaded from `public/assets/image_comic.png`.
 - The game is level-based.
-- Each level has:
-  - a spawn point
-  - a list of floating platforms
-  - 5 collectible treats
-  - a goal area that advances to the next level after all treats are collected
-- Levels currently loop back to level 1 after the last level.
+- The progression model is:
+  - a level contains one or more stages
+  - each stage has its own spawn point, platforms, collectibles, and goal
+- The current content is:
+  - `Level 1`
+  - `Stage 1`
+  - `Stage 2`
+  - `Stage 3`
+- After the last stage of the last level, progression loops back to the first stage of the first level.
 
 ## Controls
 
@@ -70,16 +73,19 @@ This file describes the current state of the game implementation and the assumpt
 
 - Level data lives in `src/game/levels.ts`.
 - Each level is defined by the `LevelDefinition` type.
-- The active level is loaded by `loadLevel()` in `src/game/game.ts`.
-- Level loading currently:
+- Each stage is defined by the `StageDefinition` type.
+- The active stage is loaded by `loadStage()` in `src/game/game.ts`.
+- Stage loading currently:
   - updates spawn position
   - destroys old floating platform graphics
   - destroys old collectible graphics
-  - rebuilds current level platforms
-  - rebuilds current level collectibles
+  - rebuilds current stage platforms
+  - rebuilds current stage collectibles
   - redraws the goal marker
   - updates the level label
   - resets the player to spawn
+- Goal completion advances to the next stage inside the same level first.
+- If the current stage is the last stage of the current level, goal completion advances to the first stage of the next level.
 
 ## Goal System
 
@@ -101,7 +107,7 @@ This file describes the current state of the game implementation and the assumpt
 
 ## HUD
 
-- A simple text label shows the current level name, treat progress, and goal state.
+- A simple text label shows the current level name, current stage name, treat progress, and goal state.
 - HUD text is attached to `app.stage`, not `gameWorld`, so it does not scale with the world.
 
 ## Important Current Behaviors
