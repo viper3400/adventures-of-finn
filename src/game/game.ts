@@ -61,8 +61,6 @@ export async function startGame(): Promise<void> {
   const levelPlatformGraphics: Graphics[] = [];
   const collectibleGraphics: Graphics[] = [];
   let collectedCount = 0;
-  const goalGfx = new Graphics();
-  gameWorld.addChild(goalGfx);
   const levelLabel = new Text({
     text: "",
     style: {
@@ -114,6 +112,8 @@ export async function startGame(): Promise<void> {
   }
 
   const playerTexture = await Assets.load("/assets/image_comic.png");
+  const goalClosedTexture = await Assets.load("/assets/door-closed.svg");
+  const goalOpenTexture = await Assets.load("/assets/door-open.svg");
   const playerScaleX = PLAYER_WIDTH / playerTexture.width;
   const playerScaleY = PLAYER_HEIGHT / playerTexture.height;
 
@@ -122,6 +122,8 @@ export async function startGame(): Promise<void> {
   playerSprite.position.set(spawnX, spawnY);
   playerSprite.scale.set(playerScaleX, playerScaleY);
   gameWorld.addChild(playerSprite);
+  const goalSprite = new Sprite(goalClosedTexture);
+  gameWorld.addChild(goalSprite);
 
   const player: Player = {
     sprite: playerSprite,
@@ -159,40 +161,10 @@ export async function startGame(): Promise<void> {
 
   function redrawGoal(): void {
     const level = LEVELS[currentLevelIndex];
-    goalGfx.clear();
-
-    if (isGoalOpen()) {
-      goalGfx
-        .roundRect(
-          level.goal.x,
-          level.goal.y,
-          level.goal.width,
-          level.goal.height,
-          10,
-        )
-        .fill({ color: 0x63d471 })
-        .stroke({ color: 0x1f7a3d, width: 4 });
-      return;
-    }
-
-    goalGfx
-      .roundRect(
-        level.goal.x,
-        level.goal.y,
-        level.goal.width,
-        level.goal.height,
-        10,
-      )
-      .fill({ color: 0x9f2d2d })
-      .stroke({ color: 0x4d0f0f, width: 4 });
-
-    for (let i = 1; i <= 3; i += 1) {
-      const barX = level.goal.x + (level.goal.width / 4) * i;
-      goalGfx
-        .moveTo(barX, level.goal.y + 6)
-        .lineTo(barX, level.goal.y + level.goal.height - 6)
-        .stroke({ color: 0xf8e7a1, width: 3 });
-    }
+    goalSprite.texture = isGoalOpen() ? goalOpenTexture : goalClosedTexture;
+    goalSprite.position.set(level.goal.x, level.goal.y);
+    goalSprite.width = level.goal.width;
+    goalSprite.height = level.goal.height;
   }
 
   function loadLevel(levelIndex: number): void {
