@@ -3,7 +3,7 @@ import type { LevelDefinition } from "./types";
 
 export const LEVELS: LevelDefinition[] = [
   {
-    name: "Level 1",
+    name: "Wiesenweg",
     stages: [
       {
         name: "Stage 1",
@@ -18,7 +18,7 @@ export const LEVELS: LevelDefinition[] = [
         ],
         goal: { platform: 4, offsetX: 120, width: 64, height: 64 },
         collectibles: [
-          { platform: "ground", offsetX: 150 },
+          { platform: "ground", offsetX: 400 },
           { platform: 1, offsetX: 75 },
           { platform: 2, offsetX: 75 },
           { platform: 3, offsetX: 70 },
@@ -39,7 +39,7 @@ export const LEVELS: LevelDefinition[] = [
         ],
         goal: { platform: 5, offsetX: 117, width: 64, height: 64 },
         collectibles: [
-          { platform: "ground", offsetX: 165 },
+          { platform: "ground", offsetX: 405 },
           { platform: 1, offsetX: 60 },
           { platform: 2, offsetX: 70 },
           { platform: 3, offsetX: 65 },
@@ -61,7 +61,7 @@ export const LEVELS: LevelDefinition[] = [
         ],
         goal: { platform: 5, offsetX: 50, width: 64, height: 64 },
         collectibles: [
-          { platform: "ground", offsetX: 210 },
+          { platform: "ground", offsetX: 500 },
           { platform: 1, offsetX: 60 },
           { platform: 2, offsetX: 60 },
           { platform: 3, offsetX: 60 },

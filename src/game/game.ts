@@ -40,6 +40,8 @@ import type {
 
 export async function startGame(): Promise<void> {
   const keys: Record<string, boolean> = {};
+  const LEVEL_INTRO_DURATION_MS = 1800;
+  const LEVEL_COMPLETE_DURATION_MS = 1500;
 
   const app = new Application();
   await app.init({ background: "#87CEEB", resizeTo: window, antialias: true });
@@ -75,6 +77,8 @@ export async function startGame(): Promise<void> {
     LEVELS[0].stages[0].spawnSurfaceY -
     PLAYER_FEET_OFFSET_Y -
     PLAYER_FEET_HEIGHT / 2;
+  let transitionTimeRemaining = 0;
+  let onTransitionComplete: (() => void) | null = null;
 
   const platforms: Platform[] = [];
   const levelPlatformGraphics: Graphics[] = [];
@@ -94,6 +98,33 @@ export async function startGame(): Promise<void> {
   });
   levelLabel.position.set(24, 24);
   app.stage.addChild(levelLabel);
+  const transitionOverlay = new Container();
+  const transitionBackdrop = new Graphics();
+  const transitionTitle = new Text({
+    text: "",
+    style: {
+      fill: 0xffffff,
+      fontSize: 54,
+      fontWeight: "800",
+      stroke: { color: 0x1f2a44, width: 6 },
+    },
+  });
+  transitionTitle.anchor.set(0.5);
+  const transitionSubtitle = new Text({
+    text: "",
+    style: {
+      fill: 0xfff4cf,
+      fontSize: 28,
+      fontWeight: "700",
+      stroke: { color: 0x1f2a44, width: 4 },
+    },
+  });
+  transitionSubtitle.anchor.set(0.5);
+  transitionOverlay.visible = false;
+  transitionOverlay.addChild(transitionBackdrop);
+  transitionOverlay.addChild(transitionTitle);
+  transitionOverlay.addChild(transitionSubtitle);
+  app.stage.addChild(transitionOverlay);
 
   const groundGfx = new Graphics()
     .rect(groundLeft, groundY, groundWidth, GROUND_HEIGHT)
@@ -107,6 +138,35 @@ export async function startGame(): Promise<void> {
     height: GROUND_HEIGHT,
     graphics: groundGfx,
   });
+
+  function layoutTransitionOverlay(): void {
+    transitionBackdrop
+      .clear()
+      .rect(0, 0, app.screen.width, app.screen.height)
+      .fill({ color: 0x102030, alpha: 0.62 });
+    transitionTitle.position.set(
+      app.screen.width / 2,
+      app.screen.height / 2 - 24,
+    );
+    transitionSubtitle.position.set(
+      app.screen.width / 2,
+      app.screen.height / 2 + 32,
+    );
+  }
+
+  function showTransition(
+    title: string,
+    subtitle: string,
+    durationMs: number,
+    onComplete: (() => void) | null = null,
+  ): void {
+    transitionTitle.text = title;
+    transitionSubtitle.text = subtitle;
+    transitionTimeRemaining = durationMs;
+    onTransitionComplete = onComplete;
+    transitionOverlay.visible = true;
+    layoutTransitionOverlay();
+  }
 
   function updateViewport(): void {
     const scale = Math.min(
@@ -136,6 +196,8 @@ export async function startGame(): Promise<void> {
     if (currentGoal) {
       rebuildDebugOverlay(getCurrentStage());
     }
+
+    layoutTransitionOverlay();
   }
 
   const playerTexture = await Assets.load("/assets/image_comic.png");
@@ -282,7 +344,7 @@ export async function startGame(): Promise<void> {
     const level = getCurrentLevel();
     const stage = getCurrentStage();
     const goalState = isGoalOpen() ? "Open" : "Closed";
-    levelLabel.text = `${level.name} - ${stage.name}  Treats ${collectedCount}/${stage.collectibles.length}  Goal ${goalState}`;
+    levelLabel.text = `Level ${currentLevelIndex + 1}: ${level.name} - ${stage.name}  Treats ${collectedCount}/${stage.collectibles.length}  Goal ${goalState}`;
   }
 
   function redrawGoal(): void {
@@ -470,10 +532,44 @@ export async function startGame(): Promise<void> {
     }
   }
 
+  function showLevelIntro(levelIndex: number): void {
+    const level = LEVELS[levelIndex];
+    showTransition(
+      `Level ${levelIndex + 1}`,
+      level.name,
+      LEVEL_INTRO_DURATION_MS,
+    );
+  }
+
+  function showLevelComplete(levelIndex: number, onComplete: () => void): void {
+    const level = LEVELS[levelIndex];
+    showTransition(
+      "Level geschafft!",
+      `${level.name} abgeschlossen`,
+      LEVEL_COMPLETE_DURATION_MS,
+      onComplete,
+    );
+  }
+
   loadStage(0, 0);
+  showLevelIntro(0);
 
   app.ticker.add(
     () => {
+      if (transitionTimeRemaining > 0) {
+        transitionTimeRemaining = Math.max(
+          0,
+          transitionTimeRemaining - app.ticker.deltaMS,
+        );
+        if (transitionTimeRemaining === 0) {
+          transitionOverlay.visible = false;
+          const pendingCallback = onTransitionComplete;
+          onTransitionComplete = null;
+          pendingCallback?.();
+        }
+        return;
+      }
+
       const previousY = player.sprite.y;
 
       player.velocityX = 0;
@@ -555,7 +651,10 @@ export async function startGame(): Promise<void> {
         }
 
         const nextLevelIndex = (currentLevelIndex + 1) % LEVELS.length;
-        loadStage(nextLevelIndex, 0);
+        showLevelComplete(currentLevelIndex, () => {
+          loadStage(nextLevelIndex, 0);
+          showLevelIntro(nextLevelIndex);
+        });
         return;
       }
 

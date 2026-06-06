@@ -87,6 +87,8 @@ This file describes the current state of the game implementation and the assumpt
   - resets the player to spawn
 - Goal completion advances to the next stage inside the same level first.
 - If the current stage is the last stage of the current level, goal completion advances to the first stage of the next level.
+- Before a new level starts, the game shows a short full-screen intro with the level number and level name.
+- After the last stage of a level, the game shows a short `Level geschafft!` screen before advancing.
 
 ## Goal System
 
