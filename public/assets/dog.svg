@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 96" role="img" aria-label="Caramel dog">
+  <path fill="#8b5a2b" d="M23 49 6 34l8 20z" />
+  <rect x="24" y="31" width="56" height="28" rx="14" fill="#c68a4a" />
+  <ellipse cx="66" cy="49" rx="12" ry="10" fill="#f3dfc5" />
+  <rect x="34" y="56" width="8" height="25" rx="4" fill="#b67a3c" />
+  <rect x="49" y="56" width="8" height="25" rx="4" fill="#b67a3c" />
+  <rect x="67" y="56" width="8" height="25" rx="4" fill="#b67a3c" />
+  <rect x="82" y="56" width="8" height="25" rx="4" fill="#b67a3c" />
+  <circle cx="86" cy="38" r="16" fill="#c68a4a" />
+  <path fill="#8b5a2b" d="M82 25 76 10l14 10z" />
+  <path fill="#8b5a2b" d="M95 25 103 11l5 15z" />
+  <ellipse cx="98" cy="43" rx="12" ry="9" fill="#e8c39b" />
+  <circle cx="107" cy="43" r="3" fill="#2f1b0c" />
+  <circle cx="90" cy="35" r="2.5" fill="#2f1b0c" />
+</svg>
