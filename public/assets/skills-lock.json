@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" width="520" height="300" role="img" aria-label="Simplified reddish brown dog sprite with transparent background">
+  <defs>
+    <style>
+      .outline{stroke:#2a1409;stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
+      .thin{stroke:#2a1409;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+    </style>
+  </defs>
+  <!-- transparent background -->
+  <g transform="translate(10 8)">
+    <!-- tail -->
+    <path class="outline" fill="#b96522" d="M128 126 C72 117 42 76 58 39 C71 8 102 25 88 53 C78 72 92 92 128 93 C151 94 156 128 128 126Z"/>
+    <path fill="#f5ddb9" d="M60 40 C72 14 101 26 87 51 C81 39 68 35 60 40Z"/>
+
+    <!-- body -->
+    <path class="outline" fill="#c87427" d="M122 112 C170 60 282 61 354 88 C397 104 409 144 393 181 C370 235 240 237 150 209 C111 197 91 154 122 112Z"/>
+    <path fill="#e29038" opacity=".75" d="M146 106 C201 76 285 79 348 100 C377 110 393 137 386 162 C326 139 232 128 146 106Z"/>
+    <path fill="#f4d9b0" d="M152 184 C217 210 326 209 374 176 C359 220 235 225 156 202 C137 196 136 188 152 184Z"/>
+
+    <!-- hind leg -->
+    <path class="outline" fill="#bd6823" d="M161 196 C146 221 139 249 152 268 L193 268 C168 253 177 231 200 204Z"/>
+    <path fill="#f4d9b0" d="M150 258 C160 252 182 254 193 268 L152 268Z"/>
+
+    <!-- rear raised leg -->
+    <path class="outline" fill="#aa5b20" d="M242 207 C221 223 216 245 236 251 C253 256 266 243 260 228 C256 219 253 212 242 207Z"/>
+    <path fill="#f4d9b0" d="M232 243 C241 246 253 242 260 232 C263 244 251 256 236 251 C228 249 225 246 232 243Z"/>
+
+    <!-- front legs -->
+    <path class="outline" fill="#c87427" d="M350 182 C346 211 354 242 376 266 L414 266 C388 250 384 213 392 179Z"/>
+    <path fill="#f4d9b0" d="M375 256 C389 251 407 254 414 266 L376 266Z"/>
+    <path class="outline" fill="#b96522" d="M306 187 C300 211 303 235 318 251 C329 263 350 252 339 235 C331 222 329 202 338 184Z"/>
+
+    <!-- neck/head -->
+    <path class="outline" fill="#c87427" d="M342 84 C371 49 430 49 461 83 C490 115 478 164 441 181 C397 201 348 174 333 134 C327 115 329 98 342 84Z"/>
+    <path fill="#e79a43" d="M369 76 C398 55 438 63 459 88 C440 84 416 91 398 110 C382 127 361 113 369 76Z"/>
+    <path fill="#f1d6b5" d="M415 123 C438 126 458 139 462 157 C452 174 424 184 400 172 C406 154 405 137 415 123Z"/>
+    <path fill="#f5e2c9" d="M405 62 C420 91 414 119 397 141 C390 113 390 83 405 62Z" opacity=".9"/>
+
+    <!-- ear -->
+    <path class="outline" fill="#9b4e1e" d="M361 79 C344 90 342 119 355 148 C363 164 388 161 392 143 C399 111 386 86 361 79Z"/>
+
+    <!-- muzzle/nose/eyes -->
+    <ellipse class="thin" cx="438" cy="145" rx="28" ry="20" fill="#f4d9b0"/>
+    <ellipse cx="459" cy="141" rx="13" ry="10" fill="#15100d"/>
+    <circle cx="412" cy="105" r="12" fill="#15100d"/>
+    <circle cx="454" cy="105" r="10" fill="#15100d"/>
+    <circle cx="416" cy="101" r="4" fill="#fff"/>
+    <circle cx="457" cy="101" r="3" fill="#fff"/>
+    <path class="thin" fill="none" d="M441 162 C430 170 416 169 406 163"/>
+
+    <!-- paws outlines -->
+    <path class="thin" fill="none" d="M160 267 C166 260 174 260 181 268"/>
+    <path class="thin" fill="none" d="M384 266 C392 258 403 259 411 266"/>
+
+    <!-- simple fur strokes -->
+    <path class="thin" fill="none" opacity=".35" d="M173 117 C213 101 258 102 308 114"/>
+    <path class="thin" fill="none" opacity=".35" d="M181 150 C235 137 287 142 345 158"/>
+    <path class="thin" fill="none" opacity=".35" d="M331 95 C346 117 348 145 337 169"/>
+  </g>
+</svg>

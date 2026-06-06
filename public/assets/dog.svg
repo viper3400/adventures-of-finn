@@ -1,15 +1,87 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 96" role="img" aria-label="Caramel dog">
-  <path fill="#8b5a2b" d="M23 49 6 34l8 20z" />
-  <rect x="24" y="31" width="56" height="28" rx="14" fill="#c68a4a" />
-  <ellipse cx="66" cy="49" rx="12" ry="10" fill="#f3dfc5" />
-  <rect x="34" y="56" width="8" height="25" rx="4" fill="#b67a3c" />
-  <rect x="49" y="56" width="8" height="25" rx="4" fill="#b67a3c" />
-  <rect x="67" y="56" width="8" height="25" rx="4" fill="#b67a3c" />
-  <rect x="82" y="56" width="8" height="25" rx="4" fill="#b67a3c" />
-  <circle cx="86" cy="38" r="16" fill="#c68a4a" />
-  <path fill="#8b5a2b" d="M82 25 76 10l14 10z" />
-  <path fill="#8b5a2b" d="M95 25 103 11l5 15z" />
-  <ellipse cx="98" cy="43" rx="12" ry="9" fill="#e8c39b" />
-  <circle cx="107" cy="43" r="3" fill="#2f1b0c" />
-  <circle cx="90" cy="35" r="2.5" fill="#2f1b0c" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="900" height="520">
+  <title>Dog sprite based on original photo</title>
+  <desc>Transparent-background simplified vector sprite of the reddish-brown dog from the reference photo.</desc>
+  <defs>
+    <linearGradient id="fur" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#cf8a43"/>
+      <stop offset="0.42" stop-color="#a85f2b"/>
+      <stop offset="1" stop-color="#7a3f1f"/>
+    </linearGradient>
+    <linearGradient id="lightfur" x1="0" x2="1">
+      <stop offset="0" stop-color="#fff2d8"/>
+      <stop offset="1" stop-color="#d9b483"/>
+    </linearGradient>
+    <style>
+      .outline{stroke:#2a170f;stroke-width:9;stroke-linecap:round;stroke-linejoin:round}
+      .inner{stroke:#5a2f18;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;fill:none;opacity:.55}
+      .thin{stroke:#2a170f;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;fill:none}
+    </style>
+  </defs>
+
+  <!-- Tail, high curved like the photo -->
+  <path class="outline" fill="url(#fur)" d="M205 260 C105 224 70 136 107 79 C134 37 199 35 226 75 C187 68 145 76 137 118 C126 177 185 213 246 229 Z"/>
+  <path fill="#f4dfba" opacity=".95" d="M110 80 C137 44 191 45 216 74 C182 70 149 82 141 116 C133 151 154 178 184 198 C120 171 85 119 110 80 Z"/>
+  <path class="inner" d="M131 96 C121 150 150 195 211 222"/>
+
+  <!-- Hind leg behind -->
+  <path class="outline" fill="#a85f2b" d="M322 292 C286 335 260 376 259 426 C260 456 304 458 319 435 C306 424 305 395 333 360 C356 332 366 308 355 289 Z"/>
+  <path fill="url(#lightfur)" d="M264 425 C276 441 301 444 316 433 C306 423 304 408 313 391 C292 397 271 408 264 425 Z"/>
+
+  <!-- Body: long reddish body, slightly low belly -->
+  <path class="outline" fill="url(#fur)" d="M238 222 C314 167 467 145 598 161 C690 172 747 224 737 296 C724 385 607 413 461 399 C342 388 249 353 214 300 C197 274 210 243 238 222 Z"/>
+  <!-- Cream belly and chest visible in the original -->
+  <path fill="url(#lightfur)" opacity=".98" d="M302 324 C380 353 505 370 618 348 C681 335 719 303 720 263 C733 317 690 371 603 390 C483 415 350 390 270 344 C242 328 234 303 247 283 C259 302 277 315 302 324 Z"/>
+  <!-- back highlights / mottled fur -->
+  <path class="inner" d="M278 220 C370 184 495 174 611 191"/>
+  <path class="inner" d="M301 260 C403 225 527 222 642 246"/>
+  <path class="inner" d="M360 315 C446 338 552 333 648 306"/>
+  <path fill="#d4944b" opacity=".45" d="M296 219 C379 186 509 178 603 194 C556 217 466 223 395 244 C351 257 321 252 296 219 Z"/>
+  <path fill="#6f351b" opacity=".18" d="M251 301 C335 346 467 370 592 354 C503 398 346 370 261 326 Z"/>
+
+  <!-- Front far leg -->
+  <path class="outline" fill="#9d5527" d="M666 314 C657 360 652 405 668 455 C679 486 724 483 727 456 C701 448 699 423 706 383 C713 348 713 326 695 306 Z"/>
+  <path fill="url(#lightfur)" d="M671 454 C687 469 713 470 724 455 C704 449 700 435 704 417 C684 421 670 434 671 454 Z"/>
+
+  <!-- Front near leg straight and white paw like photo -->
+  <path class="outline" fill="#b96b2e" d="M716 297 C730 338 731 385 751 439 C764 475 825 471 829 443 C797 438 784 414 778 377 C773 342 762 315 744 292 Z"/>
+  <path fill="url(#lightfur)" d="M754 438 C772 459 811 460 826 443 C802 439 789 426 781 407 C762 412 749 423 754 438 Z"/>
+
+  <!-- Hind near leg with angled hock and white paw -->
+  <path class="outline" fill="#b5662e" d="M239 289 C215 330 208 372 219 417 C226 448 271 452 283 427 C263 417 263 389 285 360 C312 324 314 300 291 275 Z"/>
+  <path fill="url(#lightfur)" d="M222 417 C237 438 266 440 281 427 C263 417 258 402 265 383 C244 389 225 400 222 417 Z"/>
+
+  <!-- Neck and head turned toward viewer, placed like original photo -->
+  <path class="outline" fill="#b96b2e" d="M624 150 C671 101 766 112 809 171 C848 226 828 291 769 321 C705 354 628 315 606 249 C594 210 600 174 624 150 Z"/>
+  <path fill="#d58b43" opacity=".5" d="M643 151 C682 119 751 125 791 171 C749 157 689 157 641 190 Z"/>
+  <path fill="url(#lightfur)" d="M736 184 C781 195 809 235 797 275 C787 310 739 323 700 306 C727 280 741 239 736 184 Z"/>
+  <path fill="#f3dfbd" d="M691 139 C712 133 744 137 765 154 C741 149 710 153 687 168 Z" opacity=".75"/>
+  <path fill="#f6e2c3" d="M733 243 C760 232 791 240 797 266 C804 295 775 315 738 309 C709 304 696 285 707 265 C712 255 721 248 733 243 Z"/>
+
+  <!-- ears: floppy, similar to original -->
+  <path class="outline" fill="#8d4a24" d="M642 158 C609 173 596 224 614 268 C626 298 664 281 668 248 C673 209 670 177 642 158 Z"/>
+  <path class="outline" fill="#8d4a24" d="M790 167 C829 176 853 214 846 254 C842 275 816 273 806 248 C796 222 783 189 790 167 Z"/>
+  <path class="inner" d="M633 182 C617 212 617 247 631 270"/>
+  <path class="inner" d="M806 188 C824 211 833 233 829 257"/>
+
+  <!-- Face details -->
+  <ellipse cx="685" cy="214" rx="19" ry="24" fill="#18100d"/>
+  <ellipse cx="768" cy="218" rx="18" ry="23" fill="#18100d"/>
+  <circle cx="692" cy="205" r="6" fill="#fff5e6"/>
+  <circle cx="774" cy="209" r="6" fill="#fff5e6"/>
+  <path fill="#16110f" d="M746 259 C762 247 790 250 801 267 C795 287 763 291 745 276 C739 271 740 264 746 259 Z"/>
+  <path class="thin" d="M749 282 C735 294 713 293 700 281"/>
+  <path class="thin" d="M799 274 C811 278 818 284 824 292"/>
+  <path class="thin" d="M735 274 C722 276 711 281 703 289"/>
+
+  <!-- white forehead stripe and muzzle line from photo -->
+  <path fill="#f5e2bf" opacity=".9" d="M720 126 C739 139 746 165 742 190 C738 172 723 158 705 151 C708 141 713 133 720 126 Z"/>
+  <path class="inner" d="M638 304 C664 329 703 335 740 322"/>
+
+  <!-- white paws on far/near rear as small accents -->
+  <path fill="#f6e4c5" d="M222 425 C236 442 264 445 281 428 C266 423 247 420 222 425 Z"/>
+  <path fill="#f6e4c5" d="M264 431 C278 445 302 447 317 433 C301 430 283 427 264 431 Z"/>
+
+  <!-- subtle black outline accents for sprite readability -->
+  <path class="thin" d="M223 286 C283 327 380 348 490 352" opacity=".55"/>
+  <path class="thin" d="M574 173 C613 184 634 214 631 257" opacity=".35"/>
 </svg>
