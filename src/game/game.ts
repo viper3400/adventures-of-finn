@@ -46,7 +46,11 @@ export async function startGame(): Promise<void> {
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
   let debugVisible = false;
-  let suppressJumpUntilSpaceRelease = false;
+  let jumpReady = true;
+
+  function isJumpKeyHeld(): boolean {
+    return Boolean(keys[" "] || keys["w"] || keys["arrowup"]);
+  }
 
   window.addEventListener("keydown", (e) => {
     const key = e.key.toLowerCase();
@@ -57,14 +61,14 @@ export async function startGame(): Promise<void> {
     }
     if (key === " " && !e.repeat && transitionOverlay.visible) {
       closeTransition();
-      suppressJumpUntilSpaceRelease = true;
+      jumpReady = false;
     }
   });
   window.addEventListener("keyup", (e) => {
     const key = e.key.toLowerCase();
     keys[key] = false;
-    if (key === " ") {
-      suppressJumpUntilSpaceRelease = false;
+    if (!isJumpKeyHeld()) {
+      jumpReady = true;
     }
   });
 
@@ -670,7 +674,7 @@ export async function startGame(): Promise<void> {
           if (
             player.velocityY >= 0 &&
             previousY + PLAYER_FEET_OFFSET_Y + PLAYER_FEET_HEIGHT / 2 <=
-            platform.y + PLATFORM_LANDING_TOLERANCE
+              platform.y + PLATFORM_LANDING_TOLERANCE
           ) {
             player.sprite.y =
               platform.y - PLAYER_FEET_OFFSET_Y - PLAYER_FEET_HEIGHT / 2;
@@ -683,9 +687,10 @@ export async function startGame(): Promise<void> {
       if (
         (keys[" "] || keys["w"] || keys["arrowup"]) &&
         !player.isJumping &&
-        !suppressJumpUntilSpaceRelease
+        jumpReady
       ) {
         player.velocityY = JUMP_POWER;
+        jumpReady = false;
       }
 
       collectItems(player.sprite.x, player.sprite.y);
