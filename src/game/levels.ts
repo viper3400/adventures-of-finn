@@ -55,7 +55,7 @@ export const LEVELS: LevelDefinition[] = [
           { id: 2, x: 430, y: WORLD_HEIGHT - 250, w: 120, h: 18 },
           { id: 3, x: 650, y: WORLD_HEIGHT - 340, w: 120, h: 18 },
           { id: 4, x: 860, y: WORLD_HEIGHT - 430, w: 120, h: 18 },
-          { id: 5, x: 660, y: WORLD_HEIGHT - 520, w: 150, h: 18 },
+          { id: 5, x: 650, y: WORLD_HEIGHT - 550, w: 150, h: 18 },
           { id: 6, x: 380, y: WORLD_HEIGHT - 470, w: 110, h: 18 },
           { id: 7, x: 1020, y: WORLD_HEIGHT - 300, w: 130, h: 18 },
         ],
