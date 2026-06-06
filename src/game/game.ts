@@ -192,7 +192,7 @@ export async function startGame(): Promise<void> {
         .rect(config.x, config.y, config.w, config.h)
         .fill({ color: 0x228b22 });
       levelPlatformGraphics.push(gfx);
-      gameWorld.addChild(gfx);
+      gameWorld.addChildAt(gfx, 0);
       platforms.push({
         x: config.x,
         y: config.y,
