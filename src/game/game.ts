@@ -90,6 +90,7 @@ export async function startGame(): Promise<void> {
     PLAYER_FEET_HEIGHT / 2;
   let onTransitionComplete: (() => void) | null = null;
   let transitionDog: Sprite | null = null;
+  let transitionSpeechBubble: Sprite | null = null;
 
   const platforms: Platform[] = [];
   const levelPlatformGraphics: Graphics[] = [];
@@ -111,7 +112,6 @@ export async function startGame(): Promise<void> {
   app.stage.addChild(levelLabel);
   const transitionOverlay = new Container();
   const transitionBackdrop = new Graphics();
-  const speechBubble = new Graphics();
   const transitionTitle = new Text({
     text: "",
     style: {
@@ -135,9 +135,10 @@ export async function startGame(): Promise<void> {
   const transitionSpeech = new Text({
     text: "",
     style: {
-      fill: 0x1b2434,
-      fontSize: 26,
+      fill: 0xffffff,
+      fontSize: 24,
       fontWeight: "700",
+      stroke: { color: 0x20324d, width: 3 },
       wordWrap: true,
       wordWrapWidth: 360,
     },
@@ -154,7 +155,6 @@ export async function startGame(): Promise<void> {
   transitionPrompt.anchor.set(0.5);
   transitionOverlay.visible = false;
   transitionOverlay.addChild(transitionBackdrop);
-  transitionOverlay.addChild(speechBubble);
   transitionOverlay.addChild(transitionTitle);
   transitionOverlay.addChild(transitionSubtitle);
   transitionOverlay.addChild(transitionSpeech);
@@ -175,45 +175,26 @@ export async function startGame(): Promise<void> {
   });
 
   function layoutTransitionOverlay(): void {
-    const bubbleX = Math.max(app.screen.width * 0.43, 350);
-    const bubbleY = Math.max(158, app.screen.height * 0.2);
-    const bubbleWidth = Math.min(app.screen.width * 0.42, 500);
-    const bubbleHeight = 182;
+    const bubbleX = Math.max(app.screen.width * 0.39, 310);
+    const bubbleY = Math.max(172, app.screen.height * 0.2);
+    const bubbleWidth = Math.min(app.screen.width * 0.5, 620);
+    const bubbleHeight = Math.min(app.screen.height * 0.34, 260);
 
     transitionBackdrop
       .clear()
       .rect(0, 0, app.screen.width, app.screen.height)
       .fill({ color: 0x102030, alpha: 1 });
-    speechBubble
-      .clear()
-      .roundRect(bubbleX + 10, bubbleY + 12, bubbleWidth, bubbleHeight, 30)
-      .fill({ color: 0x0d1828, alpha: 0.16 })
-      .poly([
-        bubbleX + 36,
-        bubbleY + bubbleHeight - 24,
-        bubbleX - 16,
-        bubbleY + bubbleHeight + 24,
-        bubbleX + 92,
-        bubbleY + bubbleHeight - 2,
-      ])
-      .fill({ color: 0x0d1828, alpha: 0.16 })
-      .roundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 30)
-      .fill({ color: 0xfffcf2 })
-      .stroke({ color: 0x1f2a44, width: 4 })
-      .poly([
-        bubbleX + 30,
-        bubbleY + bubbleHeight - 30,
-        bubbleX - 24,
-        bubbleY + bubbleHeight + 18,
-        bubbleX + 86,
-        bubbleY + bubbleHeight - 8,
-      ])
-      .fill({ color: 0xfffcf2 })
-      .stroke({ color: 0x1f2a44, width: 4 });
+
+    if (transitionSpeechBubble) {
+      transitionSpeechBubble.position.set(bubbleX, bubbleY);
+      transitionSpeechBubble.width = bubbleWidth;
+      transitionSpeechBubble.height = bubbleHeight;
+    }
+
     transitionTitle.position.set(app.screen.width / 2, 82);
     transitionSubtitle.position.set(app.screen.width / 2, 132);
-    transitionSpeech.position.set(bubbleX + 28, bubbleY + 34);
-    transitionSpeech.style.wordWrapWidth = bubbleWidth - 56;
+    transitionSpeech.position.set(bubbleX + 84, bubbleY + 44);
+    transitionSpeech.style.wordWrapWidth = bubbleWidth - 160;
     transitionPrompt.position.set(app.screen.width / 2, app.screen.height - 72);
 
     if (transitionDog) {
@@ -290,11 +271,16 @@ export async function startGame(): Promise<void> {
   }
 
   const playerTexture = await Assets.load("/assets/image_comic.png");
+  const speechBubbleTexture = await Assets.load(
+    "/assets/chat-speech-bubble.svg",
+  );
   const goalClosedTexture = await Assets.load("/assets/door-closed.svg");
   const goalOpenTexture = await Assets.load("/assets/door-open.svg");
   const playerScaleX = PLAYER_WIDTH / playerTexture.width;
   const playerScaleY = PLAYER_HEIGHT / playerTexture.height;
   transitionDog = new Sprite(playerTexture);
+  transitionSpeechBubble = new Sprite(speechBubbleTexture);
+  transitionOverlay.addChildAt(transitionSpeechBubble, 1);
   transitionOverlay.addChildAt(transitionDog, 1);
 
   const playerSprite = new Sprite(playerTexture);
