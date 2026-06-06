@@ -40,14 +40,13 @@ import type {
 
 export async function startGame(): Promise<void> {
   const keys: Record<string, boolean> = {};
-  const LEVEL_INTRO_DURATION_MS = 1800;
-  const LEVEL_COMPLETE_DURATION_MS = 1500;
 
   const app = new Application();
   await app.init({ background: "#87CEEB", resizeTo: window, antialias: true });
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
   let debugVisible = false;
+  let suppressJumpUntilSpaceRelease = false;
 
   window.addEventListener("keydown", (e) => {
     const key = e.key.toLowerCase();
@@ -56,9 +55,17 @@ export async function startGame(): Promise<void> {
       debugVisible = !debugVisible;
       debugLayer.visible = debugVisible;
     }
+    if (key === " " && !e.repeat && transitionOverlay.visible) {
+      closeTransition();
+      suppressJumpUntilSpaceRelease = true;
+    }
   });
   window.addEventListener("keyup", (e) => {
-    keys[e.key.toLowerCase()] = false;
+    const key = e.key.toLowerCase();
+    keys[key] = false;
+    if (key === " ") {
+      suppressJumpUntilSpaceRelease = false;
+    }
   });
 
   const gameWorld = new Container();
@@ -77,8 +84,8 @@ export async function startGame(): Promise<void> {
     LEVELS[0].stages[0].spawnSurfaceY -
     PLAYER_FEET_OFFSET_Y -
     PLAYER_FEET_HEIGHT / 2;
-  let transitionTimeRemaining = 0;
   let onTransitionComplete: (() => void) | null = null;
+  let transitionDog: Sprite | null = null;
 
   const platforms: Platform[] = [];
   const levelPlatformGraphics: Graphics[] = [];
@@ -100,6 +107,7 @@ export async function startGame(): Promise<void> {
   app.stage.addChild(levelLabel);
   const transitionOverlay = new Container();
   const transitionBackdrop = new Graphics();
+  const speechBubble = new Graphics();
   const transitionTitle = new Text({
     text: "",
     style: {
@@ -120,10 +128,33 @@ export async function startGame(): Promise<void> {
     },
   });
   transitionSubtitle.anchor.set(0.5);
+  const transitionSpeech = new Text({
+    text: "",
+    style: {
+      fill: 0x1b2434,
+      fontSize: 26,
+      fontWeight: "700",
+      wordWrap: true,
+      wordWrapWidth: 360,
+    },
+  });
+  const transitionPrompt = new Text({
+    text: "Press Space",
+    style: {
+      fill: 0xffffff,
+      fontSize: 22,
+      fontWeight: "700",
+      stroke: { color: 0x1f2a44, width: 4 },
+    },
+  });
+  transitionPrompt.anchor.set(0.5);
   transitionOverlay.visible = false;
   transitionOverlay.addChild(transitionBackdrop);
+  transitionOverlay.addChild(speechBubble);
   transitionOverlay.addChild(transitionTitle);
   transitionOverlay.addChild(transitionSubtitle);
+  transitionOverlay.addChild(transitionSpeech);
+  transitionOverlay.addChild(transitionPrompt);
   app.stage.addChild(transitionOverlay);
 
   const groundGfx = new Graphics()
@@ -140,32 +171,86 @@ export async function startGame(): Promise<void> {
   });
 
   function layoutTransitionOverlay(): void {
+    const bubbleX = Math.max(app.screen.width * 0.43, 350);
+    const bubbleY = Math.max(158, app.screen.height * 0.2);
+    const bubbleWidth = Math.min(app.screen.width * 0.42, 500);
+    const bubbleHeight = 182;
+
     transitionBackdrop
       .clear()
       .rect(0, 0, app.screen.width, app.screen.height)
-      .fill({ color: 0x102030, alpha: 0.62 });
-    transitionTitle.position.set(
-      app.screen.width / 2,
-      app.screen.height / 2 - 24,
-    );
-    transitionSubtitle.position.set(
-      app.screen.width / 2,
-      app.screen.height / 2 + 32,
-    );
+      .fill({ color: 0x102030, alpha: 1 });
+    speechBubble
+      .clear()
+      .roundRect(bubbleX + 10, bubbleY + 12, bubbleWidth, bubbleHeight, 30)
+      .fill({ color: 0x0d1828, alpha: 0.16 })
+      .poly([
+        bubbleX + 36,
+        bubbleY + bubbleHeight - 24,
+        bubbleX - 16,
+        bubbleY + bubbleHeight + 24,
+        bubbleX + 92,
+        bubbleY + bubbleHeight - 2,
+      ])
+      .fill({ color: 0x0d1828, alpha: 0.16 })
+      .roundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, 30)
+      .fill({ color: 0xfffcf2 })
+      .stroke({ color: 0x1f2a44, width: 4 })
+      .poly([
+        bubbleX + 30,
+        bubbleY + bubbleHeight - 30,
+        bubbleX - 24,
+        bubbleY + bubbleHeight + 18,
+        bubbleX + 86,
+        bubbleY + bubbleHeight - 8,
+      ])
+      .fill({ color: 0xfffcf2 })
+      .stroke({ color: 0x1f2a44, width: 4 });
+    transitionTitle.position.set(app.screen.width / 2, 82);
+    transitionSubtitle.position.set(app.screen.width / 2, 132);
+    transitionSpeech.position.set(bubbleX + 28, bubbleY + 34);
+    transitionSpeech.style.wordWrapWidth = bubbleWidth - 56;
+    transitionPrompt.position.set(app.screen.width / 2, app.screen.height - 72);
+
+    if (transitionDog) {
+      const targetWidth = Math.min(app.screen.width * 0.38, 560);
+      const targetHeight = Math.min(app.screen.height * 0.54, 530);
+      const scale = Math.min(
+        targetWidth / transitionDog.texture.width,
+        targetHeight / transitionDog.texture.height,
+      );
+      transitionDog.anchor.set(0.5);
+      transitionDog.scale.set(scale);
+      transitionDog.position.set(
+        app.screen.width * 0.26,
+        app.screen.height * 0.73,
+      );
+    }
   }
 
   function showTransition(
     title: string,
     subtitle: string,
-    durationMs: number,
+    speech: string,
     onComplete: (() => void) | null = null,
   ): void {
     transitionTitle.text = title;
     transitionSubtitle.text = subtitle;
-    transitionTimeRemaining = durationMs;
+    transitionSpeech.text = speech;
     onTransitionComplete = onComplete;
     transitionOverlay.visible = true;
     layoutTransitionOverlay();
+  }
+
+  function closeTransition(): void {
+    if (!transitionOverlay.visible) {
+      return;
+    }
+
+    transitionOverlay.visible = false;
+    const pendingCallback = onTransitionComplete;
+    onTransitionComplete = null;
+    pendingCallback?.();
   }
 
   function updateViewport(): void {
@@ -205,6 +290,8 @@ export async function startGame(): Promise<void> {
   const goalOpenTexture = await Assets.load("/assets/door-open.svg");
   const playerScaleX = PLAYER_WIDTH / playerTexture.width;
   const playerScaleY = PLAYER_HEIGHT / playerTexture.height;
+  transitionDog = new Sprite(playerTexture);
+  transitionOverlay.addChildAt(transitionDog, 1);
 
   const playerSprite = new Sprite(playerTexture);
   playerSprite.anchor.set(0.5);
@@ -534,11 +621,7 @@ export async function startGame(): Promise<void> {
 
   function showLevelIntro(levelIndex: number): void {
     const level = LEVELS[levelIndex];
-    showTransition(
-      `Level ${levelIndex + 1}`,
-      level.name,
-      LEVEL_INTRO_DURATION_MS,
-    );
+    showTransition(`Level ${levelIndex + 1}`, level.name, level.introText);
   }
 
   function showLevelComplete(levelIndex: number, onComplete: () => void): void {
@@ -546,7 +629,7 @@ export async function startGame(): Promise<void> {
     showTransition(
       "Level geschafft!",
       `${level.name} abgeschlossen`,
-      LEVEL_COMPLETE_DURATION_MS,
+      level.completionText,
       onComplete,
     );
   }
@@ -556,17 +639,7 @@ export async function startGame(): Promise<void> {
 
   app.ticker.add(
     () => {
-      if (transitionTimeRemaining > 0) {
-        transitionTimeRemaining = Math.max(
-          0,
-          transitionTimeRemaining - app.ticker.deltaMS,
-        );
-        if (transitionTimeRemaining === 0) {
-          transitionOverlay.visible = false;
-          const pendingCallback = onTransitionComplete;
-          onTransitionComplete = null;
-          pendingCallback?.();
-        }
+      if (transitionOverlay.visible) {
         return;
       }
 
@@ -597,7 +670,7 @@ export async function startGame(): Promise<void> {
           if (
             player.velocityY >= 0 &&
             previousY + PLAYER_FEET_OFFSET_Y + PLAYER_FEET_HEIGHT / 2 <=
-              platform.y + PLATFORM_LANDING_TOLERANCE
+            platform.y + PLATFORM_LANDING_TOLERANCE
           ) {
             player.sprite.y =
               platform.y - PLAYER_FEET_OFFSET_Y - PLAYER_FEET_HEIGHT / 2;
@@ -607,7 +680,11 @@ export async function startGame(): Promise<void> {
         }
       });
 
-      if ((keys[" "] || keys["w"] || keys["arrowup"]) && !player.isJumping) {
+      if (
+        (keys[" "] || keys["w"] || keys["arrowup"]) &&
+        !player.isJumping &&
+        !suppressJumpUntilSpaceRelease
+      ) {
         player.velocityY = JUMP_POWER;
       }
 

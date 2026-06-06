@@ -74,6 +74,9 @@ This file describes the current state of the game implementation and the assumpt
 
 - Level data lives in `src/game/levels.ts`.
 - Each level is defined by the `LevelDefinition` type.
+- Each level owns its own transition copy:
+  - `introText`
+  - `completionText`
 - Each stage is defined by the `StageDefinition` type.
 - The active stage is loaded by `loadStage()` in `src/game/game.ts`.
 - Stage loading currently:
@@ -87,8 +90,9 @@ This file describes the current state of the game implementation and the assumpt
   - resets the player to spawn
 - Goal completion advances to the next stage inside the same level first.
 - If the current stage is the last stage of the current level, goal completion advances to the first stage of the next level.
-- Before a new level starts, the game shows a short full-screen intro with the level number and level name.
-- After the last stage of a level, the game shows a short `Level geschafft!` screen before advancing.
+- Before a new level starts, the game shows a full-screen intro with the level number and level name, and waits for `Space`.
+- After the last stage of a level, the game shows a `Level geschafft!` screen before advancing, and waits for `Space`.
+- Both transition screens use an overlay with a large dog image and a speech bubble line, driven from `game.ts`.
 
 ## Goal System
 

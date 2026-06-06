@@ -4,6 +4,10 @@ import type { LevelDefinition } from "./types";
 export const LEVELS: LevelDefinition[] = [
   {
     name: "Wiesenweg",
+    introText:
+      "Ich liebe Würste. Mein Herrchen liebt Würste bestimmt auch. Ich werde alle Würste einsammeln!",
+    completionText:
+      "Alle Würste gesammelt. Hmm, wo sind sie denn hin? Ich habe sie vermutlich gefressen, naja, mein Herrchen kann sich ja selber welche kaufen.",
     stages: [
       {
         name: "Stage 1",

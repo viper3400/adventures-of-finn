@@ -60,5 +60,7 @@ export interface StageDefinition {
 
 export interface LevelDefinition {
   name: string;
+  introText: string;
+  completionText: string;
   stages: StageDefinition[];
 }
