@@ -1,5 +1,6 @@
 import {
   getStageCollectibles,
+  getStageCollectibleVisual,
   getStageObjectiveType,
   getStageStore,
 } from "../level-schema";
@@ -28,11 +29,47 @@ function assertPlatformExists(
 }
 
 function validateStage(level: LevelDefinition, stage: StageDefinition): void {
+  if (!stage.name.trim()) {
+    throw new Error(`Stage name is required in level "${level.id}"`);
+  }
+
+  if (stage.spawn.surfaceY <= 0) {
+    throw new Error(`Invalid spawn surface in ${stageLabel(level, stage)}`);
+  }
+
+  if (stage.goal.width <= 0 || stage.goal.height <= 0) {
+    throw new Error(
+      `Goal must have positive dimensions in ${stageLabel(level, stage)}`,
+    );
+  }
+
+  const platformIds = new Set<number>();
+  stage.platforms.forEach((platform) => {
+    if (platformIds.has(platform.id)) {
+      throw new Error(
+        `Duplicate platform "${platform.id}" in ${stageLabel(level, stage)}`,
+      );
+    }
+    platformIds.add(platform.id);
+
+    if (platform.w <= 0 || platform.h <= 0) {
+      throw new Error(
+        `Platform "${platform.id}" must have positive dimensions in ${stageLabel(level, stage)}`,
+      );
+    }
+  });
+
   if (getStageCollectibles(stage).length === 0) {
     throw new Error(`Missing collectibles in ${stageLabel(level, stage)}`);
   }
 
   assertPlatformExists(level, stage, stage.goal.platform, "goal");
+  const collectibleVisual = getStageCollectibleVisual(stage);
+  if (collectibleVisual.width <= 0 || collectibleVisual.height <= 0) {
+    throw new Error(
+      `Collectible visual must have positive dimensions in ${stageLabel(level, stage)}`,
+    );
+  }
   getStageCollectibles(stage).forEach((collectible, index) => {
     assertPlatformExists(
       level,
@@ -50,6 +87,11 @@ function validateStage(level: LevelDefinition, stage: StageDefinition): void {
   }
   if (store) {
     assertPlatformExists(level, stage, store.platform, "store");
+    if (store.width <= 0 || store.height <= 0) {
+      throw new Error(
+        `Store must have positive dimensions in ${stageLabel(level, stage)}`,
+      );
+    }
   }
 
   const checkpointIds = new Set<string>();
@@ -75,10 +117,21 @@ export function validateLevels(levels: LevelDefinition[]): LevelDefinition[] {
   const levelIds = new Set<string>();
 
   levels.forEach((level) => {
+    if (!level.id.trim()) {
+      throw new Error("Level id is required");
+    }
     if (levelIds.has(level.id)) {
       throw new Error(`Duplicate level id "${level.id}"`);
     }
     levelIds.add(level.id);
+
+    if (!level.name.trim()) {
+      throw new Error(`Level name is required for "${level.id}"`);
+    }
+
+    if (!level.stages.length) {
+      throw new Error(`Level "${level.id}" must define at least one stage`);
+    }
 
     level.stages.forEach((stage) => validateStage(level, stage));
   });

@@ -20,7 +20,7 @@ export type GameFlowEffect =
 export interface GameFlowController {
   getState(): GameFlowState;
   isPlaying(): boolean;
-  start(): GameFlowEffect[];
+  start(initialStage?: StageRef): GameFlowEffect[];
   advanceTransition(): GameFlowEffect[];
   advanceFromGoal(): GameFlowEffect[];
   skipForward(): GameFlowEffect[];
@@ -67,13 +67,12 @@ export function createGameFlowController(
     isPlaying(): boolean {
       return state.kind === "playing";
     },
-    start(): GameFlowEffect[] {
-      const firstStage = { levelIndex: 0, stageIndex: 0 };
-      state = { kind: "levelIntro", stage: firstStage };
+    start(initialStage = { levelIndex: 0, stageIndex: 0 }): GameFlowEffect[] {
+      state = { kind: "levelIntro", stage: initialStage };
 
       return [
-        { type: "loadStage", stage: firstStage },
-        { type: "showLevelIntro", levelIndex: firstStage.levelIndex },
+        { type: "loadStage", stage: initialStage },
+        { type: "showLevelIntro", levelIndex: initialStage.levelIndex },
       ];
     },
     advanceTransition(): GameFlowEffect[] {

@@ -9,6 +9,7 @@ import { LEVELS } from "./levels";
 import { loadGameAssets } from "./runtime/assets";
 import { createInputController } from "./runtime/input";
 import { createPlayer } from "./runtime/player";
+import { createProgressionController } from "./runtime/progression";
 import {
   createGameFlowController,
   type GameFlowEffect,
@@ -26,6 +27,7 @@ export async function startGame(): Promise<void> {
   const stageRuntime = createStageRuntime(assets);
   app.stage.addChild(stageRuntime.gameWorld);
   const gameFlow = createGameFlowController(LEVELS);
+  const progression = createProgressionController(LEVELS);
 
   const hud = createHud(app);
   const transition = createTransitionOverlay(
@@ -73,6 +75,7 @@ export async function startGame(): Promise<void> {
 
   function loadStage(levelIndex: number, stageIndex: number): void {
     stageRuntime.loadStage(levelIndex, stageIndex);
+    progression.recordReachedStage({ levelIndex, stageIndex });
     resetPlayerToSpawn();
     updateHud();
   }
@@ -123,7 +126,7 @@ export async function startGame(): Promise<void> {
   updateViewport();
   app.renderer.on("resize", updateViewport);
 
-  applyGameFlowEffects(gameFlow.start());
+  applyGameFlowEffects(gameFlow.start(progression.getResumeStage()));
 
   app.ticker.add(
     () => {

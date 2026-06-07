@@ -94,6 +94,13 @@ This file describes the current state of the game implementation and the assumpt
   - `objective.collectibleVisual`
   - `objective.collectibles`
 - Transport stages additionally define `objective.store`.
+- Level data is validated at startup:
+  - level ids and names must be present
+  - levels must contain at least one stage
+  - stage names must be present
+  - platform ids must be unique within a stage
+  - platforms, goals, collectibles, and stores must resolve to positive dimensions
+  - anchored goal/store/collectible references must point at real platforms
 - Stages may additionally declare:
   - `checkpoints`
   - `hazards`
@@ -113,6 +120,8 @@ This file describes the current state of the game implementation and the assumpt
   - resets the player to spawn
 - Goal completion advances to the next stage inside the same level first.
 - If the current stage is the last stage of the current level, goal completion advances to the first stage of the next level.
+- Progression is persisted in browser `localStorage` as the furthest reached stage.
+- Reloading the game resumes from the saved stage instead of always restarting at level 1 stage 1.
 - Before a new level starts, the game shows a full-screen intro with the level number and level name, and waits for `Space`.
 - After the last stage of a level, the game shows a `Level geschafft!` screen before advancing, and waits for `Space`.
 - Both transition screens use an overlay with a large dog image and a speech bubble line, driven from `src/game/runtime/ui.ts`.
@@ -186,7 +195,7 @@ This file describes the current state of the game implementation and the assumpt
 ## Suggested Next Refactors
 
 - Move respawn handling into the state-flow module if death/failure states become more complex than an instant reset.
-- Add validation helpers for level data and platform anchors.
+- Add a small developer-facing reset-progress action if faster test iteration becomes important.
 - Extend state-flow for pause/menu/checkpoint flows before adding hazards or dialogue-heavy sequences.
 
 ## Agent Guidance
