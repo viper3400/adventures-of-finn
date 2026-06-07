@@ -17,10 +17,10 @@ const level2: LevelDefinition = {
     speech: "Alles geliefert. Das war anstrengend, aber sehr professionell.",
   },
   timing: {
-    failSeconds: 120,
-    oneStarSeconds: 120,
-    twoStarSeconds: 100,
-    threeStarSeconds: 80,
+    failSeconds: 140,
+    oneStarSeconds: 140,
+    twoStarSeconds: 120,
+    threeStarSeconds: 100,
     hurrySeconds: 20,
   },
   presentation: {
