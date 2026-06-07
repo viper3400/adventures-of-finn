@@ -11,6 +11,9 @@ const level2: LevelDefinition = {
   completion: {
     speech: "Alles geliefert. Das war anstrengend, aber sehr professionell.",
   },
+  presentation: {
+    themeKey: "retroIndoor",
+  },
   stages: [stage1],
 };
 

@@ -113,8 +113,10 @@ export interface TransitionContent {
   subtitle?: string;
 }
 
+export type LevelThemeKey = "retroOutdoor" | "retroIndoor";
+
 export interface LevelPresentationDefinition {
-  themeKey?: string;
+  themeKey?: LevelThemeKey;
   musicKey?: string;
   portraitAssetPath?: string;
 }

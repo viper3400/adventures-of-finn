@@ -21,6 +21,7 @@ import type {
   DecorDefinition,
   HazardDefinition,
   LevelDefinition,
+  LevelThemeKey,
   Platform,
   Player,
   ResolvedCheckpoint,
@@ -83,7 +84,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   let groundLeft = 0;
   let groundWidth = WORLD_WIDTH;
 
-  function drawRetroBackground(gfx: Graphics): void {
+  function drawRetroOutdoorBackground(gfx: Graphics): void {
     const visibleLeft = groundLeft;
     const visibleWidth = groundWidth;
     const farHillY = WORLD_HEIGHT - GROUND_HEIGHT - 150;
@@ -152,6 +153,76 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     });
   }
 
+  function drawRetroIndoorBackground(gfx: Graphics): void {
+    const visibleLeft = groundLeft;
+    const visibleWidth = groundWidth;
+    const visibleRight = visibleLeft + visibleWidth;
+    const backWallY = WORLD_HEIGHT - GROUND_HEIGHT - 210;
+    const floorTopY = WORLD_HEIGHT - GROUND_HEIGHT - 34;
+
+    gfx.clear();
+    gfx.rect(visibleLeft, 0, visibleWidth, WORLD_HEIGHT).fill({
+      color: 0x21182a,
+    });
+    gfx
+      .rect(visibleLeft, 0, visibleWidth, WORLD_HEIGHT - GROUND_HEIGHT - 14)
+      .fill({ color: 0x31233d });
+
+    for (let stripeY = 54; stripeY < floorTopY - 24; stripeY += 34) {
+      gfx
+        .rect(visibleLeft, stripeY, visibleWidth, 8)
+        .fill({ color: 0x4a375d, alpha: 0.34 });
+    }
+
+    for (
+      let panelX = visibleLeft + 22;
+      panelX < visibleRight - 22;
+      panelX += 86
+    ) {
+      gfx
+        .rect(panelX, 42, 6, floorTopY - 70)
+        .fill({ color: 0x58426f, alpha: 0.4 });
+    }
+
+    gfx
+      .rect(visibleLeft, backWallY, visibleWidth, 30)
+      .fill({ color: 0x4a3557 })
+      .rect(visibleLeft, backWallY + 12, visibleWidth, 6)
+      .fill({ color: 0x8d6fb0, alpha: 0.4 });
+
+    gfx
+      .rect(visibleLeft, floorTopY, visibleWidth, WORLD_HEIGHT - floorTopY)
+      .fill({ color: 0x5b3d2c });
+
+    for (
+      let boardX = visibleLeft - 20;
+      boardX < visibleRight + 40;
+      boardX += 44
+    ) {
+      gfx
+        .rect(boardX, floorTopY, 8, WORLD_HEIGHT - floorTopY)
+        .fill({ color: 0x744d34, alpha: 0.62 });
+    }
+
+    for (let plankY = floorTopY + 18; plankY < WORLD_HEIGHT; plankY += 28) {
+      gfx
+        .rect(visibleLeft, plankY, visibleWidth, 4)
+        .fill({ color: 0x8d6245, alpha: 0.32 });
+    }
+  }
+
+  function drawBackgroundForLevel(level: LevelDefinition): void {
+    const themeKey: LevelThemeKey =
+      level.presentation?.themeKey ?? "retroOutdoor";
+
+    if (themeKey === "retroIndoor") {
+      drawRetroIndoorBackground(backgroundGfx);
+      return;
+    }
+
+    drawRetroOutdoorBackground(backgroundGfx);
+  }
+
   function drawPlatformSurface(
     gfx: Graphics,
     x: number,
@@ -216,7 +287,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   }
 
   const groundGfx = new Graphics();
-  drawRetroBackground(backgroundGfx);
+  drawBackgroundForLevel(LEVELS[0]);
   drawPlatformSurface(
     groundGfx,
     groundLeft,
@@ -489,6 +560,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       currentStore = resolveStore(stage);
       currentCheckpoints = resolveCheckpoints(stage);
       currentHazards = resolveHazards(stage);
+      drawBackgroundForLevel(LEVELS[levelIndex]);
 
       platforms.splice(1);
       levelPlatformGraphics.forEach((gfx) => {
@@ -604,7 +676,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
 
       groundLeft = -sidePadding;
       groundWidth = WORLD_WIDTH + sidePadding * 2;
-      drawRetroBackground(backgroundGfx);
+      drawBackgroundForLevel(getCurrentLevel());
 
       drawPlatformSurface(
         groundGfx,
