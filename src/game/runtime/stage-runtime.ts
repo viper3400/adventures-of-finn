@@ -50,7 +50,7 @@ export interface StageRuntime {
   loadStage(levelIndex: number, stageIndex: number): void;
   updateViewport(screenWidth: number, screenHeight: number): void;
   toggleDebug(): void;
-  syncActorLayers(playerSprite: Sprite): void;
+  syncActorLayers(playerSprite: Container): void;
   getPlatforms(): Platform[];
   getSpawnPoint(): SpawnPoint;
   getCurrentLevel(): LevelDefinition;
@@ -62,7 +62,7 @@ export interface StageRuntime {
   isGoalOpen(): boolean;
   collectItems(playerX: number, playerY: number): boolean;
   deliverCarriedCollectible(playerX: number, playerY: number): boolean;
-  updateCarriedCollectiblePosition(playerSprite: Sprite): void;
+  updateCarriedCollectiblePosition(playerSprite: Container): void;
   dropCarriedCollectible(): boolean;
   updateDeliveryEffects(deltaMs: number): void;
   checkGoalReached(playerX: number, playerY: number): boolean;
@@ -553,7 +553,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       debugVisible = !debugVisible;
       debugLayer.visible = debugVisible;
     },
-    syncActorLayers(playerSprite: Sprite): void {
+    syncActorLayers(playerSprite: Container): void {
       const debugIndex = gameWorld.getChildIndex(debugLayer);
       const playerIndex = Math.max(0, debugIndex - 1);
       gameWorld.setChildIndex(playerSprite, playerIndex);
@@ -672,7 +672,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       redrawGoal();
       return true;
     },
-    updateCarriedCollectiblePosition(playerSprite: Sprite): void {
+    updateCarriedCollectiblePosition(playerSprite: Container): void {
       if (!carriedCollectibleSprite || carriedCollectibleIndex === null) {
         return;
       }

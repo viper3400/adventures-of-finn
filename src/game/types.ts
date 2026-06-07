@@ -1,4 +1,4 @@
-import type { Graphics, Sprite } from "pixi.js";
+import type { Container, Graphics } from "pixi.js";
 
 export type PlatformId = "ground" | number;
 
@@ -12,7 +12,7 @@ export interface Platform {
 }
 
 export interface Player {
-  sprite: Sprite;
+  sprite: Container;
   velocityX: number;
   velocityY: number;
   isJumping: boolean;
