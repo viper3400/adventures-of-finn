@@ -35,6 +35,7 @@ import type { GameAssets } from "./assets";
 
 interface DeliveryEffect {
   ageMs: number;
+  delayMs: number;
   durationMs: number;
   gfx: Graphics;
   x: number;
@@ -333,6 +334,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   let currentStore: ResolvedStore | null = null;
   let currentCheckpoints: ResolvedCheckpoint[] = [];
   let currentHazards: ResolvedHazard[] = [];
+  let wasGoalOpen = false;
 
   function getStandingY(surfaceY: number): number {
     return surfaceY - PLAYER_FEET_OFFSET_Y - PLAYER_FEET_HEIGHT / 2;
@@ -488,11 +490,13 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     deliveryEffects.length = 0;
   }
 
-  function spawnDeliverySuccessEffect(x: number, y: number): void {
+  function spawnDeliverySuccessEffect(x: number, y: number, delayMs = 0): void {
     const gfx = new Graphics();
     gameWorld.addChild(gfx);
+    gfx.visible = delayMs === 0;
     deliveryEffects.push({
       ageMs: 0,
+      delayMs,
       durationMs: 520,
       gfx,
       x,
@@ -509,12 +513,31 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       return;
     }
 
-    goalSprite.texture = isGoalCurrentlyOpen()
+    const isOpen = isGoalCurrentlyOpen();
+
+    goalSprite.texture = isOpen
       ? assets.goalOpenTexture
       : assets.goalClosedTexture;
     goalSprite.position.set(currentGoal.x, currentGoal.y);
     goalSprite.width = currentGoal.width;
     goalSprite.height = currentGoal.height;
+
+    if (isOpen && !wasGoalOpen) {
+      const goalCenterX = currentGoal.x + currentGoal.width / 2;
+      const goalCenterY = currentGoal.y + currentGoal.height / 2;
+      spawnDeliverySuccessEffect(
+        goalCenterX,
+        goalCenterY - currentGoal.height * 0.15,
+        250
+      );
+      spawnDeliverySuccessEffect(
+        goalCenterX,
+        goalCenterY + currentGoal.height * 0.15,
+        750,
+      );
+    }
+
+    wasGoalOpen = isOpen;
   }
 
   function clearDecor(): void {
@@ -591,6 +614,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       clearDeliveryEffects();
       carriedCollectibleIndex = null;
       progressCount = 0;
+      wasGoalOpen = false;
 
       stage.platforms.forEach((config) => {
         const gfx = new Graphics();
@@ -851,19 +875,32 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     updateDeliveryEffects(deltaMs: number): void {
       for (let index = deliveryEffects.length - 1; index >= 0; index -= 1) {
         const effect = deliveryEffects[index];
+        if (effect.delayMs > 0) {
+          effect.delayMs = Math.max(0, effect.delayMs - deltaMs);
+
+          if (effect.delayMs > 0) {
+            continue;
+          }
+
+          effect.gfx.visible = true;
+        }
+
         effect.ageMs += deltaMs;
 
         const progress = Math.min(1, effect.ageMs / effect.durationMs);
         const alpha = 1 - progress;
-        const ringRadius = 16 + progress * 28;
-        const sparkleRadius = 10 + progress * 18;
+        const ringRadius = 18 + progress * 30;
+        const sparkleRadius = 12 + progress * 20;
+        const coreRadius = 6 + progress * 8;
 
         effect.gfx
           .clear()
           .circle(effect.x, effect.y, ringRadius)
-          .stroke({ color: 0xfff2a8, width: 4, alpha })
+          .stroke({ color: 0xfffbcc, width: 6, alpha: alpha * 0.95 })
           .star(effect.x, effect.y, 6, sparkleRadius, sparkleRadius * 0.45, 0)
-          .fill({ color: 0xffd447, alpha: alpha * 0.45 });
+          .fill({ color: 0xffb300, alpha: alpha * 0.72 })
+          .circle(effect.x, effect.y, coreRadius)
+          .fill({ color: 0xffffff, alpha: alpha * 0.55 });
 
         if (effect.ageMs < effect.durationMs) {
           continue;
