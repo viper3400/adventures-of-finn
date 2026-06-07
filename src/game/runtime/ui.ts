@@ -18,6 +18,12 @@ export interface HudController {
   update(state: HudState): void;
 }
 
+export interface HurryOverlayController {
+  show(): void;
+  update(deltaMs: number): void;
+  layout(): void;
+}
+
 export interface TransitionController {
   show(title: string, subtitle: string, speech: string): void;
   hide(): void;
@@ -40,8 +46,8 @@ export interface StartupMenuController {
 }
 
 export function createHud(app: Application): HudController {
-  const chrome = new Graphics();
-  const label = new Text({
+  const infoChrome = new Graphics();
+  const infoLabel = new Text({
     text: "",
     style: {
       fill: 0xfff7b1,
@@ -51,36 +57,169 @@ export function createHud(app: Application): HudController {
       stroke: { color: 0x221141, width: 4 },
     },
   });
-  chrome.position.set(16, 16);
-  label.position.set(36, 32);
-  app.stage.addChild(chrome);
-  app.stage.addChild(label);
+  const timeChrome = new Graphics();
+  const timeLabel = new Text({
+    text: "",
+    style: {
+      fill: 0xfff7b1,
+      fontFamily: "Courier New, monospace",
+      fontSize: 22,
+      fontWeight: "800",
+      stroke: { color: 0x221141, width: 4 },
+    },
+  });
+  const livesChrome = new Graphics();
+  const livesLabel = new Text({
+    text: "",
+    style: {
+      fill: 0xfff7b1,
+      fontFamily: "Courier New, monospace",
+      fontSize: 22,
+      fontWeight: "800",
+      stroke: { color: 0x221141, width: 4 },
+    },
+  });
+
+  infoChrome.position.set(16, 16);
+  infoLabel.position.set(36, 32);
+  timeChrome.position.set(0, 16);
+  timeLabel.position.set(0, 32);
+  livesChrome.position.set(0, 16);
+  livesLabel.position.set(0, 32);
+
+  app.stage.addChild(infoChrome);
+  app.stage.addChild(infoLabel);
+  app.stage.addChild(timeChrome);
+  app.stage.addChild(timeLabel);
+  app.stage.addChild(livesChrome);
+  app.stage.addChild(livesLabel);
+
+  function drawBox(
+    chrome: Graphics,
+    width: number,
+    height: number,
+    frameColor: number,
+    bodyColor: number,
+    stripeColor: number,
+  ): void {
+    chrome
+      .clear()
+      .rect(0, 0, width + 40, height + 24)
+      .fill({ color: frameColor, alpha: 0.92 })
+      .rect(6, 6, width + 28, height + 12)
+      .fill({ color: bodyColor, alpha: 0.96 })
+      .rect(14, 14, width + 12, height - 4)
+      .fill({ color: 0x0d1737, alpha: 1 })
+      .rect(14, 14, width + 12, 12)
+      .fill({ color: stripeColor, alpha: 1 });
+  }
 
   return {
     update(state: HudState): void {
       const timerLabel = `Time ${state.timeRemainingSeconds}s`;
-      const livesLabel = `Lives ${state.livesRemaining}`;
-      const hurryLabel = state.hurry ? " HURRY!" : "";
+      const livesLabelText = `Lives ${state.livesRemaining}`;
       const modeStatus =
         state.objectiveType === "transport"
           ? `Delivered ${state.progressCount}/${state.totalCollectibles}`
           : `Treats ${state.progressCount}/${state.totalCollectibles}`;
 
-      label.text = `Level ${state.levelIndex + 1}: ${state.levelName} - ${state.stageName}  ${modeStatus}  ${timerLabel}  ${livesLabel}${hurryLabel}`;
-      const frameColor = state.hurry ? 0x7e1212 : 0x26134c;
-      const bodyColor = state.hurry ? 0x5a1111 : 0x162e72;
-      const stripeColor = state.hurry ? 0xd44747 : 0x6c39c3;
-      chrome
-        .clear()
-        .rect(0, 0, label.width + 40, label.height + 24)
-        .fill({ color: frameColor, alpha: 0.92 })
-        .rect(6, 6, label.width + 28, label.height + 12)
-        .fill({ color: bodyColor, alpha: 0.96 })
-        .rect(14, 14, label.width + 12, label.height - 4)
-        .fill({ color: 0x0d1737, alpha: 1 })
-        .rect(14, 14, label.width + 12, 12)
-        .fill({ color: stripeColor, alpha: 1 });
+      infoLabel.text = `Level ${state.levelIndex + 1}: ${state.levelName} - ${state.stageName}  ${modeStatus}`;
+      timeLabel.text = timerLabel;
+      livesLabel.text = livesLabelText;
+
+      drawBox(
+        infoChrome,
+        infoLabel.width,
+        infoLabel.height,
+        0x26134c,
+        0x162e72,
+        0x6c39c3,
+      );
+      drawBox(
+        timeChrome,
+        timeLabel.width,
+        timeLabel.height,
+        state.hurry ? 0x7e1212 : 0x26134c,
+        state.hurry ? 0x5a1111 : 0x162e72,
+        state.hurry ? 0xd44747 : 0x6c39c3,
+      );
+      drawBox(
+        livesChrome,
+        livesLabel.width,
+        livesLabel.height,
+        0x26134c,
+        0x162e72,
+        0x6c39c3,
+      );
+
+      const infoBoxWidth = infoLabel.width + 40;
+      const timeBoxWidth = timeLabel.width + 40;
+      timeChrome.position.set(32 + infoBoxWidth, 16);
+      timeLabel.position.set(52 + infoBoxWidth, 32);
+      livesChrome.position.set(48 + infoBoxWidth + timeBoxWidth, 16);
+      livesLabel.position.set(68 + infoBoxWidth + timeBoxWidth, 32);
     },
+  };
+}
+
+export function createHurryOverlay(app: Application): HurryOverlayController {
+  const overlay = new Container();
+  const backdrop = new Graphics();
+  const label = new Text({
+    text: "HURRY!",
+    style: {
+      fill: 0xfff7b1,
+      fontFamily: "Courier New, monospace",
+      fontSize: 96,
+      fontWeight: "900",
+      stroke: { color: 0x5f0d0d, width: 10 },
+      dropShadow: {
+        alpha: 1,
+        angle: Math.PI / 4,
+        blur: 0,
+        color: 0x240606,
+        distance: 6,
+      },
+    },
+  });
+  let remainingMs = 0;
+
+  label.anchor.set(0.5);
+  overlay.visible = false;
+  overlay.addChild(backdrop);
+  overlay.addChild(label);
+  app.stage.addChild(overlay);
+
+  function layout(): void {
+    label.position.set(app.screen.width / 2, app.screen.height / 2);
+  }
+
+  return {
+    show(): void {
+      remainingMs = 2000;
+      overlay.visible = true;
+      layout();
+    },
+    update(deltaMs: number): void {
+      if (remainingMs <= 0) {
+        return;
+      }
+
+      remainingMs = Math.max(0, remainingMs - deltaMs);
+      const progress = remainingMs / 2000;
+
+      backdrop
+        .clear()
+        .rect(0, 0, app.screen.width, app.screen.height)
+        .fill({ color: 0x7e1212, alpha: 0.18 * progress });
+      label.alpha = 0.35 + 0.65 * progress;
+      label.scale.set(1 + (1 - progress) * 0.08);
+
+      if (remainingMs === 0) {
+        overlay.visible = false;
+      }
+    },
+    layout,
   };
 }
 

@@ -21,6 +21,7 @@ import {
 import { createStageRuntime } from "./runtime/stage-runtime";
 import {
   createHud,
+  createHurryOverlay,
   createStartupMenu,
   createTitleScreen,
   createTransitionOverlay,
@@ -40,6 +41,7 @@ export async function startGame(): Promise<void> {
   const levelSession = createLevelSessionController(LEVELS);
 
   const hud = createHud(app);
+  const hurryOverlay = createHurryOverlay(app);
   const titleScreen = createTitleScreen(app, assets.titleTexture);
   const startupMenu = createStartupMenu(app, assets.titleTexture);
   const transition = createTransitionOverlay(
@@ -55,6 +57,7 @@ export async function startGame(): Promise<void> {
     spawnPoint.y,
   );
   let lastLevelCompletion: LevelCompletionResult | null = null;
+  let previousHurry = false;
 
   function formatStars(starsEarned: number): string {
     return `${"*".repeat(starsEarned)}${"-".repeat(3 - starsEarned)}`;
@@ -79,6 +82,7 @@ export async function startGame(): Promise<void> {
 
   function updateViewport(): void {
     stageRuntime.updateViewport(app.screen.width, app.screen.height);
+    hurryOverlay.layout();
     titleScreen.layout();
     startupMenu.layout();
     transition.layout();
@@ -143,6 +147,7 @@ export async function startGame(): Promise<void> {
       }
     });
     levelSession.setRunning(gameFlow.isPlaying());
+    previousHurry = levelSession.isHurry();
     updateHud();
   }
 
@@ -254,6 +259,7 @@ export async function startGame(): Promise<void> {
       }
 
       stageRuntime.updateDeliveryEffects(app.ticker.deltaMS);
+      hurryOverlay.update(app.ticker.deltaMS);
       stageRuntime.updateMovingPlatforms(app.ticker.deltaMS, player.player);
       player.update(input, stageRuntime.getPlatforms());
       const timeoutResult = levelSession.update(app.ticker.deltaMS);
@@ -274,6 +280,12 @@ export async function startGame(): Promise<void> {
         );
         return;
       }
+
+      const isHurry = levelSession.isHurry();
+      if (isHurry && !previousHurry) {
+        hurryOverlay.show();
+      }
+      previousHurry = isHurry;
 
       let needsHudUpdate = false;
       if (stageRuntime.collectItems(player.sprite.x, player.sprite.y)) {
