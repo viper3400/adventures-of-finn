@@ -166,7 +166,7 @@ export function createHurryOverlay(app: Application): HurryOverlayController {
   const overlay = new Container();
   const backdrop = new Graphics();
   const label = new Text({
-    text: "HURRY!",
+    text: " JETZT SCHNELL !!!",
     style: {
       fill: 0xfff7b1,
       fontFamily: "Courier New, monospace",
