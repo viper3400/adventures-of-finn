@@ -205,6 +205,7 @@ export async function startGame(): Promise<void> {
       }
 
       stageRuntime.updateDeliveryEffects(app.ticker.deltaMS);
+      stageRuntime.updateMovingPlatforms(app.ticker.deltaMS, player.player);
       player.update(input, stageRuntime.getPlatforms());
 
       let needsHudUpdate = false;

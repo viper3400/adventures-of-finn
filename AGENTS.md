@@ -30,9 +30,9 @@ This file describes the current state of the game implementation and the assumpt
   - `transport`: pickups must be carried to a store before they count
 - The current content is:
   - `Level 1`
-  - `Stage 1`
-  - `Stage 2`
-  - `Stage 3`
+  - `Stage 1` to `Stage 6`
+  - `Level 2`
+  - `Stage 1` to `Stage 6`
 - After the last stage of the last level, progression loops back to the first stage of the first level.
 
 ## Controls
@@ -100,6 +100,7 @@ This file describes the current state of the game implementation and the assumpt
   - stage names must be present
   - platform ids must be unique within a stage
   - platforms, goals, collectibles, and stores must resolve to positive dimensions
+  - moving platform motion values must resolve to positive distance and speed
   - anchored goal/store/collectible references must point at real platforms
 - Stages may additionally declare:
   - `checkpoints`
@@ -141,7 +142,7 @@ This file describes the current state of the game implementation and the assumpt
 - A goal area is represented as a rectangular zone in level data.
 - The goal starts closed.
 - While closed, it stays visually closed but does not physically block the dog.
-- The goal opens only after all 5 treats in the current level are collected.
+- The goal opens only after all collectibles in the current stage are collected or delivered.
 - When the player's paw zone intersects an open goal, the game advances to the next level.
 - The goal is drawn as:
   - closed: red gate with bars
@@ -149,7 +150,7 @@ This file describes the current state of the game implementation and the assumpt
 
 ## Collectibles
 
-- Every level currently defines exactly 5 treats in level data.
+- Each stage defines its own collectible count in level data.
 - Treats are rendered from the current stage's configured SVG asset.
 - Pickup is based on overlap with the dog's visible body bounds.
 - In `collect` mode, touching a treat consumes it immediately.
@@ -171,6 +172,8 @@ This file describes the current state of the game implementation and the assumpt
   - resize logic mutates its `x` and `width`
 - Floating platforms are rebuilt when levels change.
 - Floating platforms use numeric ids inside each stage definition.
+- Floating platforms may optionally declare `motion.horizontal` and/or `motion.vertical` in level data.
+- Anchored goals, stores, and collectibles follow moving platforms at runtime.
 - Pressing `L` toggles debug labels that show each platform id and its `x/y` position.
 
 ## If You Change Physics

@@ -12,6 +12,7 @@ import {
   PLAYER_FEET_OFFSET_Y,
   PLAYER_FEET_WIDTH,
   PLAYER_HEIGHT,
+  PLAYER_SUPPORT_OFFSET_X,
   PLAYER_WIDTH,
   WORLD_HEIGHT,
   WORLD_WIDTH,
@@ -23,6 +24,7 @@ import type {
   LevelDefinition,
   LevelThemeKey,
   Platform,
+  PlatformId,
   Player,
   ResolvedCheckpoint,
   ResolvedCollectible,
@@ -66,6 +68,7 @@ export interface StageRuntime {
   deliverCarriedCollectible(playerX: number, playerY: number): boolean;
   updateCarriedCollectiblePosition(playerSprite: Container): void;
   dropCarriedCollectible(): boolean;
+  updateMovingPlatforms(deltaMs: number, player: Player): void;
   updateDeliveryEffects(deltaMs: number): void;
   checkGoalReached(playerX: number, playerY: number): boolean;
   blockClosedGoal(player: Player): void;
@@ -348,10 +351,12 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     return getCurrentLevel().stages[currentStageIndex];
   }
 
-  function getAnchorPlatformBounds(
-    stage: StageDefinition,
-    anchorPlatform: "ground" | number,
-  ): { x: number; y: number; width: number; height: number } {
+  function getAnchorPlatformBounds(anchorPlatform: PlatformId): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } {
     if (anchorPlatform === "ground") {
       return {
         x: groundLeft,
@@ -361,8 +366,8 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       };
     }
 
-    const platform = stage.platforms.find(
-      (platformConfig) => platformConfig.id === anchorPlatform,
+    const platform = platforms.find(
+      (platformEntry) => platformEntry.id === anchorPlatform,
     );
     if (!platform) {
       throw new Error(`Unknown platform anchor "${anchorPlatform}"`);
@@ -371,13 +376,13 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     return {
       x: platform.x,
       y: platform.y,
-      width: platform.w,
-      height: platform.h,
+      width: platform.width,
+      height: platform.height,
     };
   }
 
   function resolveGoal(stage: StageDefinition): ResolvedGoal {
-    const platform = getAnchorPlatformBounds(stage, stage.goal.platform);
+    const platform = getAnchorPlatformBounds(stage.goal.platform);
     const x = platform.x + stage.goal.offsetX - stage.goal.width / 2;
     const y = platform.y - stage.goal.height;
 
@@ -388,7 +393,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     const collectibleVisual = getStageCollectibleVisual(stage);
 
     return getStageCollectibles(stage).map((collectible) => {
-      const platform = getAnchorPlatformBounds(stage, collectible.platform);
+      const platform = getAnchorPlatformBounds(collectible.platform);
       return {
         x: platform.x + collectible.offsetX,
         y: platform.y - collectibleVisual.height / 2 - 8,
@@ -404,7 +409,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       return null;
     }
 
-    const platform = getAnchorPlatformBounds(stage, store.platform);
+    const platform = getAnchorPlatformBounds(store.platform);
     const x = platform.x + store.offsetX - store.width / 2;
     const y = platform.y - store.height;
 
@@ -436,6 +441,48 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
 
   function isTransportStage(stage = getCurrentStage()): boolean {
     return getStageObjectiveType(stage) === "transport";
+  }
+
+  function isPlayerStandingOnPlatform(
+    player: Player,
+    platform: Platform,
+  ): boolean {
+    const playerX = player.sprite.x;
+    const playerY = player.sprite.y;
+    const facing = Math.sign(player.sprite.scale.x) || 1;
+    const supportX = playerX + PLAYER_SUPPORT_OFFSET_X * facing;
+    const feetBottom = playerY + PLAYER_FEET_OFFSET_Y + PLAYER_FEET_HEIGHT / 2;
+    const alignedToTop = Math.abs(feetBottom - platform.y) <= 2;
+
+    return (
+      !player.isJumping &&
+      alignedToTop &&
+      supportX >= platform.x &&
+      supportX <= platform.x + platform.width
+    );
+  }
+
+  function refreshDynamicAnchors(): void {
+    const stage = getCurrentStage();
+
+    currentGoal = resolveGoal(stage);
+    currentCollectibles = resolveCollectibles(stage);
+    currentStore = resolveStore(stage);
+
+    collectibleSprites.forEach((sprite, index) => {
+      const collectible = currentCollectibles[index];
+      sprite.position.set(collectible.x, collectible.y);
+      sprite.width = collectible.width;
+      sprite.height = collectible.height;
+    });
+
+    if (storeSprite && currentStore) {
+      storeSprite.position.set(currentStore.x, currentStore.y);
+      storeSprite.width = currentStore.width;
+      storeSprite.height = currentStore.height;
+    }
+
+    redrawGoal();
   }
 
   function clearDebugOverlay(): void {
@@ -528,7 +575,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       spawnDeliverySuccessEffect(
         goalCenterX,
         goalCenterY - currentGoal.height * 0.15,
-        250
+        250,
       );
       spawnDeliverySuccessEffect(
         goalCenterX,
@@ -578,9 +625,6 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         x: stage.spawn.x,
         y: getStandingY(stage.spawn.surfaceY),
       };
-      currentGoal = resolveGoal(stage);
-      currentCollectibles = resolveCollectibles(stage);
-      currentStore = resolveStore(stage);
       currentCheckpoints = resolveCheckpoints(stage);
       currentHazards = resolveHazards(stage);
       drawBackgroundForLevel(LEVELS[levelIndex]);
@@ -635,8 +679,32 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
           width: config.w,
           height: config.h,
           graphics: gfx,
+          baseX: config.x,
+          baseY: config.y,
+          motion: config.motion
+            ? {
+                horizontal: config.motion.horizontal
+                  ? {
+                      ...config.motion.horizontal,
+                      direction: 1,
+                      offset: 0,
+                    }
+                  : undefined,
+                vertical: config.motion.vertical
+                  ? {
+                      ...config.motion.vertical,
+                      direction: 1,
+                      offset: 0,
+                    }
+                  : undefined,
+              }
+            : undefined,
         });
       });
+
+      currentGoal = resolveGoal(stage);
+      currentCollectibles = resolveCollectibles(stage);
+      currentStore = resolveStore(stage);
 
       addDecor(stage);
 
@@ -871,6 +939,86 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       }
 
       return true;
+    },
+    updateMovingPlatforms(deltaMs: number, player: Player): void {
+      let hasMotion = false;
+
+      platforms.forEach((platform) => {
+        if (platform.id === "ground" || !platform.motion) {
+          return;
+        }
+
+        const wasStanding = isPlayerStandingOnPlatform(player, platform);
+        let nextX = platform.baseX ?? platform.x;
+        let nextY = platform.baseY ?? platform.y;
+        let deltaX = 0;
+        let deltaY = 0;
+
+        const horizontalMotion = platform.motion.horizontal;
+        if (horizontalMotion) {
+          horizontalMotion.offset +=
+            horizontalMotion.direction *
+            horizontalMotion.speed *
+            (deltaMs / 1000);
+          if (horizontalMotion.offset >= horizontalMotion.distance) {
+            horizontalMotion.offset = horizontalMotion.distance;
+            horizontalMotion.direction = -1;
+          } else if (horizontalMotion.offset <= 0) {
+            horizontalMotion.offset = 0;
+            horizontalMotion.direction = 1;
+          }
+
+          nextX += horizontalMotion.offset;
+        }
+
+        const verticalMotion = platform.motion.vertical;
+        if (verticalMotion) {
+          verticalMotion.offset +=
+            verticalMotion.direction * verticalMotion.speed * (deltaMs / 1000);
+          if (verticalMotion.offset >= verticalMotion.distance) {
+            verticalMotion.offset = verticalMotion.distance;
+            verticalMotion.direction = -1;
+          } else if (verticalMotion.offset <= 0) {
+            verticalMotion.offset = 0;
+            verticalMotion.direction = 1;
+          }
+
+          nextY += verticalMotion.offset;
+        }
+
+        deltaX = nextX - platform.x;
+        deltaY = nextY - platform.y;
+
+        if (deltaX === 0 && deltaY === 0) {
+          return;
+        }
+
+        hasMotion = true;
+        platform.x = nextX;
+        platform.y = nextY;
+        drawPlatformSurface(
+          platform.graphics,
+          platform.x,
+          platform.y,
+          platform.width,
+          platform.height,
+          "platform",
+        );
+
+        if (wasStanding) {
+          player.sprite.x += deltaX;
+          player.sprite.y += deltaY;
+        }
+      });
+
+      if (!hasMotion) {
+        return;
+      }
+
+      refreshDynamicAnchors();
+      if (debugVisible) {
+        rebuildDebugOverlay(getCurrentStage());
+      }
     },
     updateDeliveryEffects(deltaMs: number): void {
       for (let index = deliveryEffects.length - 1; index >= 0; index -= 1) {

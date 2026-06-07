@@ -9,6 +9,9 @@ export interface Platform {
   width: number;
   height: number;
   graphics: Graphics;
+  baseX?: number;
+  baseY?: number;
+  motion?: PlatformMotionState;
 }
 
 export interface Player {
@@ -25,6 +28,25 @@ export interface PlatformConfig {
   y: number;
   w: number;
   h: number;
+  motion?: {
+    horizontal?: PlatformMotionAxisDefinition;
+    vertical?: PlatformMotionAxisDefinition;
+  };
+}
+
+export interface PlatformMotionAxisDefinition {
+  distance: number;
+  speed: number;
+}
+
+export interface PlatformMotionAxisState extends PlatformMotionAxisDefinition {
+  direction: 1 | -1;
+  offset: number;
+}
+
+export interface PlatformMotionState {
+  horizontal?: PlatformMotionAxisState;
+  vertical?: PlatformMotionAxisState;
 }
 
 export interface PlatformAnchor {

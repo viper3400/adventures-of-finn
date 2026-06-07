@@ -57,6 +57,28 @@ function validateStage(level: LevelDefinition, stage: StageDefinition): void {
         `Platform "${platform.id}" must have positive dimensions in ${stageLabel(level, stage)}`,
       );
     }
+
+    if (platform.motion?.horizontal) {
+      if (
+        platform.motion.horizontal.distance <= 0 ||
+        platform.motion.horizontal.speed <= 0
+      ) {
+        throw new Error(
+          `Platform "${platform.id}" horizontal motion must be positive in ${stageLabel(level, stage)}`,
+        );
+      }
+    }
+
+    if (platform.motion?.vertical) {
+      if (
+        platform.motion.vertical.distance <= 0 ||
+        platform.motion.vertical.speed <= 0
+      ) {
+        throw new Error(
+          `Platform "${platform.id}" vertical motion must be positive in ${stageLabel(level, stage)}`,
+        );
+      }
+    }
   });
 
   if (getStageCollectibles(stage).length === 0) {
