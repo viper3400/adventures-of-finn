@@ -92,6 +92,8 @@ function validateStage(level: LevelDefinition, stage: StageDefinition): void {
       `Collectible visual must have positive dimensions in ${stageLabel(level, stage)}`,
     );
   }
+  const chaseObjective =
+    stage.objective.type === "chase" ? stage.objective : null;
   getStageCollectibles(stage).forEach((collectible, index) => {
     assertPlatformExists(
       level,
@@ -99,7 +101,40 @@ function validateStage(level: LevelDefinition, stage: StageDefinition): void {
       collectible.platform,
       `collectible[${index}]`,
     );
+
+    if (chaseObjective) {
+      const fleeTargets = chaseObjective.collectibles[index]?.fleeTargets ?? [];
+      if (fleeTargets.length < 2) {
+        throw new Error(
+          `Chase collectible[${index}] needs at least 2 flee targets in ${stageLabel(level, stage)}`,
+        );
+      }
+
+      fleeTargets.forEach((target, targetIndex) => {
+        assertPlatformExists(
+          level,
+          stage,
+          target.platform,
+          `collectible[${index}].fleeTargets[${targetIndex}]`,
+        );
+      });
+    }
   });
+
+  if (chaseObjective) {
+    if (
+      (chaseObjective.triggerRadius !== undefined &&
+        chaseObjective.triggerRadius <= 0) ||
+      (chaseObjective.fleeSpeed !== undefined &&
+        chaseObjective.fleeSpeed <= 0) ||
+      (chaseObjective.escapeSpeed !== undefined &&
+        chaseObjective.escapeSpeed <= 0)
+    ) {
+      throw new Error(
+        `Chase settings must be positive in ${stageLabel(level, stage)}`,
+      );
+    }
+  }
 
   const store = getStageStore(stage);
   if (getStageObjectiveType(stage) === "transport" && !store) {

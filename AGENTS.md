@@ -28,10 +28,13 @@ This file describes the current state of the game implementation and the assumpt
 - Each stage owns a typed `objective`:
   - `collect`: pickups count immediately on contact
   - `transport`: pickups must be carried to a store before they count
+  - `chase`: crows flee to new perches twice and count only on the third scare
 - The current content is:
   - `Level 1`
   - `Stage 1` to `Stage 6`
   - `Level 2`
+  - `Stage 1` to `Stage 6`
+  - `Level 3`
   - `Stage 1` to `Stage 6`
 - After the last stage of the last level, progression loops back to the first stage of the first level.
 
@@ -100,6 +103,7 @@ This file describes the current state of the game implementation and the assumpt
   - `objective.collectibleVisual`
   - `objective.collectibles`
 - Transport stages additionally define `objective.store`.
+- Chase stages additionally define per-crow `fleeTargets`.
 - Level data is validated at startup:
   - level ids and names must be present
   - levels must contain at least one stage
@@ -164,6 +168,10 @@ This file describes the current state of the game implementation and the assumpt
 - Pickup is based on overlap with the dog's visible body bounds.
 - In `collect` mode, touching a treat consumes it immediately.
 - In `transport` mode, the dog carries one item at a time in its mouth and only gets credit after touching the store.
+- In `chase` mode, each crow must be approached three times:
+  - first scare: fly to flee target 1
+  - second scare: fly to flee target 2
+  - third scare: count as collected and fly off-screen
 
 ## HUD
 

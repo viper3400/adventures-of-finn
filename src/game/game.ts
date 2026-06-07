@@ -287,6 +287,15 @@ export async function startGame(): Promise<void> {
       previousHurry = isHurry;
 
       let needsHudUpdate = false;
+      if (
+        stageRuntime.updateChaseCollectibles(
+          app.ticker.deltaMS,
+          player.sprite.x,
+          player.sprite.y,
+        )
+      ) {
+        needsHudUpdate = true;
+      }
       if (stageRuntime.collectItems(player.sprite.x, player.sprite.y)) {
         needsHudUpdate = true;
       }

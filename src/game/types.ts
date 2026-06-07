@@ -84,6 +84,10 @@ export interface LevelGoal extends PlatformAnchor {
 
 export type CollectibleDefinition = PlatformAnchor;
 
+export interface ChaseCollectibleDefinition extends PlatformAnchor {
+  fleeTargets: PlatformAnchor[];
+}
+
 export interface StoreDefinition extends PlatformAnchor, VisualDefinition {}
 
 export interface CollectObjective {
@@ -99,7 +103,19 @@ export interface TransportObjective {
   store: StoreDefinition;
 }
 
-export type StageObjective = CollectObjective | TransportObjective;
+export interface ChaseObjective {
+  type: "chase";
+  collectibleVisual: VisualDefinition;
+  collectibles: ChaseCollectibleDefinition[];
+  triggerRadius?: number;
+  fleeSpeed?: number;
+  escapeSpeed?: number;
+}
+
+export type StageObjective =
+  | CollectObjective
+  | TransportObjective
+  | ChaseObjective;
 export type StageObjectiveType = StageObjective["type"];
 
 export interface CheckpointDefinition {

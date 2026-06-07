@@ -7,6 +7,9 @@ import {
   getStageStore,
 } from "../level-schema";
 import {
+  CHASE_ESCAPE_SPEED,
+  CHASE_FLEE_SPEED,
+  CHASE_TRIGGER_RADIUS,
   GROUND_HEIGHT,
   PLAYER_FEET_HEIGHT,
   PLAYER_FEET_OFFSET_Y,
@@ -19,6 +22,7 @@ import {
 } from "../constants";
 import { LEVELS } from "../levels";
 import type {
+  ChaseCollectibleDefinition,
   DecorDefinition,
   HazardDefinition,
   LevelDefinition,
@@ -42,6 +46,19 @@ interface DeliveryEffect {
   gfx: Graphics;
   x: number;
   y: number;
+}
+
+interface ChaseCrowRuntime {
+  completed: boolean;
+  cooldownMs: number;
+  currentAnchor: PlatformId;
+  currentOffsetX: number;
+  fleeingTo: { platform: PlatformId; offsetX: number } | null;
+  fleeTargetIndex: number;
+  isEscaping: boolean;
+  isFlying: boolean;
+  targetX: number;
+  targetY: number;
 }
 
 export interface SpawnPoint {
@@ -69,6 +86,11 @@ export interface StageRuntime {
   deliverCarriedCollectible(playerX: number, playerY: number): boolean;
   updateCarriedCollectiblePosition(playerSprite: Container): void;
   dropCarriedCollectible(): boolean;
+  updateChaseCollectibles(
+    deltaMs: number,
+    playerX: number,
+    playerY: number,
+  ): boolean;
   updateMovingPlatforms(deltaMs: number, player: Player): void;
   updateDeliveryEffects(deltaMs: number): void;
   checkGoalReached(playerX: number, playerY: number): boolean;
@@ -338,6 +360,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   let currentStore: ResolvedStore | null = null;
   let currentCheckpoints: ResolvedCheckpoint[] = [];
   let currentHazards: ResolvedHazard[] = [];
+  let chaseCrowStates: ChaseCrowRuntime[] = [];
   let wasGoalOpen = false;
 
   function getStandingY(surfaceY: number): number {
@@ -390,17 +413,27 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     return { x, y, width: stage.goal.width, height: stage.goal.height };
   }
 
-  function resolveCollectibles(stage: StageDefinition): ResolvedCollectible[] {
-    const collectibleVisual = getStageCollectibleVisual(stage);
+  function resolveCollectibleFromAnchor(
+    anchorPlatform: PlatformId,
+    offsetX: number,
+  ): ResolvedCollectible {
+    const collectibleVisual = getStageCollectibleVisual(getCurrentStage());
+    const platform = getAnchorPlatformBounds(anchorPlatform);
 
+    return {
+      x: platform.x + offsetX,
+      y: platform.y - collectibleVisual.height / 2 - 8,
+      width: collectibleVisual.width,
+      height: collectibleVisual.height,
+    };
+  }
+
+  function resolveCollectibles(stage: StageDefinition): ResolvedCollectible[] {
     return getStageCollectibles(stage).map((collectible) => {
-      const platform = getAnchorPlatformBounds(collectible.platform);
-      return {
-        x: platform.x + collectible.offsetX,
-        y: platform.y - collectibleVisual.height / 2 - 8,
-        width: collectibleVisual.width,
-        height: collectibleVisual.height,
-      };
+      return resolveCollectibleFromAnchor(
+        collectible.platform,
+        collectible.offsetX,
+      );
     });
   }
 
@@ -444,6 +477,34 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     return getStageObjectiveType(stage) === "transport";
   }
 
+  function isChaseStage(stage = getCurrentStage()): boolean {
+    return getStageObjectiveType(stage) === "chase";
+  }
+
+  function getChaseCollectibles(
+    stage = getCurrentStage(),
+  ): ChaseCollectibleDefinition[] {
+    return stage.objective.type === "chase" ? stage.objective.collectibles : [];
+  }
+
+  function getChaseTriggerRadius(stage = getCurrentStage()): number {
+    return stage.objective.type === "chase"
+      ? (stage.objective.triggerRadius ?? CHASE_TRIGGER_RADIUS)
+      : CHASE_TRIGGER_RADIUS;
+  }
+
+  function getChaseFleeSpeed(stage = getCurrentStage()): number {
+    return stage.objective.type === "chase"
+      ? (stage.objective.fleeSpeed ?? CHASE_FLEE_SPEED)
+      : CHASE_FLEE_SPEED;
+  }
+
+  function getChaseEscapeSpeed(stage = getCurrentStage()): number {
+    return stage.objective.type === "chase"
+      ? (stage.objective.escapeSpeed ?? CHASE_ESCAPE_SPEED)
+      : CHASE_ESCAPE_SPEED;
+  }
+
   function isPlayerStandingOnPlatform(
     player: Player,
     platform: Platform,
@@ -470,12 +531,30 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     currentCollectibles = resolveCollectibles(stage);
     currentStore = resolveStore(stage);
 
-    collectibleSprites.forEach((sprite, index) => {
-      const collectible = currentCollectibles[index];
-      sprite.position.set(collectible.x, collectible.y);
-      sprite.width = collectible.width;
-      sprite.height = collectible.height;
-    });
+    if (isChaseStage(stage)) {
+      collectibleSprites.forEach((sprite, index) => {
+        const chaseState = chaseCrowStates[index];
+        if (!chaseState || chaseState.completed || chaseState.isFlying) {
+          return;
+        }
+
+        const collectible = resolveCollectibleFromAnchor(
+          chaseState.currentAnchor,
+          chaseState.currentOffsetX,
+        );
+        currentCollectibles[index] = collectible;
+        sprite.position.set(collectible.x, collectible.y);
+        sprite.width = collectible.width;
+        sprite.height = collectible.height;
+      });
+    } else {
+      collectibleSprites.forEach((sprite, index) => {
+        const collectible = currentCollectibles[index];
+        sprite.position.set(collectible.x, collectible.y);
+        sprite.width = collectible.width;
+        sprite.height = collectible.height;
+      });
+    }
 
     if (storeSprite && currentStore) {
       storeSprite.position.set(currentStore.x, currentStore.y);
@@ -672,6 +751,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
 
       clearDeliveryEffects();
       carriedCollectibleIndex = null;
+      chaseCrowStates = [];
       progressCount = 0;
       wasGoalOpen = false;
 
@@ -720,6 +800,20 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       currentGoal = resolveGoal(stage);
       currentCollectibles = resolveCollectibles(stage);
       currentStore = resolveStore(stage);
+      if (isChaseStage(stage)) {
+        chaseCrowStates = getChaseCollectibles(stage).map((collectible) => ({
+          completed: false,
+          cooldownMs: 0,
+          currentAnchor: collectible.platform,
+          currentOffsetX: collectible.offsetX,
+          fleeingTo: null,
+          fleeTargetIndex: 0,
+          isEscaping: false,
+          isFlying: false,
+          targetX: 0,
+          targetY: 0,
+        }));
+      }
 
       addDecor(stage);
 
@@ -844,6 +938,12 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       return isGoalCurrentlyOpen();
     },
     collectItems(playerX: number, playerY: number): boolean {
+      if (isChaseStage()) {
+        void playerX;
+        void playerY;
+        return false;
+      }
+
       const playerLeft = playerX - PLAYER_WIDTH / 2;
       const playerRight = playerX + PLAYER_WIDTH / 2;
       const playerTop = playerY - PLAYER_HEIGHT / 2;
@@ -965,6 +1065,121 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       refreshDebugOverlay();
 
       return true;
+    },
+    updateChaseCollectibles(
+      deltaMs: number,
+      playerX: number,
+      playerY: number,
+    ): boolean {
+      if (!isChaseStage()) {
+        return false;
+      }
+
+      const triggerRadius = getChaseTriggerRadius();
+      const fleeSpeed = getChaseFleeSpeed();
+      const escapeSpeed = getChaseEscapeSpeed();
+      let didChange = false;
+
+      collectibleSprites.forEach((sprite, index) => {
+        const chaseState = chaseCrowStates[index];
+        if (!chaseState || chaseState.completed || !sprite.visible) {
+          return;
+        }
+
+        chaseState.cooldownMs = Math.max(0, chaseState.cooldownMs - deltaMs);
+
+        if (chaseState.isFlying) {
+          const speed = chaseState.isEscaping ? escapeSpeed : fleeSpeed;
+          const step = speed * (deltaMs / 1000);
+          const dx = chaseState.targetX - sprite.x;
+          const dy = chaseState.targetY - sprite.y;
+          const distance = Math.hypot(dx, dy);
+
+          if (distance <= step || distance <= 1) {
+            sprite.position.set(chaseState.targetX, chaseState.targetY);
+            currentCollectibles[index] = {
+              x: chaseState.targetX,
+              y: chaseState.targetY,
+              width: sprite.width,
+              height: sprite.height,
+            };
+            chaseState.isFlying = false;
+
+            if (chaseState.isEscaping) {
+              sprite.visible = false;
+              refreshDebugOverlay();
+              return;
+            }
+
+            if (chaseState.fleeingTo) {
+              chaseState.currentAnchor = chaseState.fleeingTo.platform;
+              chaseState.currentOffsetX = chaseState.fleeingTo.offsetX;
+              chaseState.fleeingTo = null;
+            }
+            chaseState.cooldownMs = 300;
+            return;
+          }
+
+          sprite.position.set(
+            sprite.x + (dx / distance) * step,
+            sprite.y + (dy / distance) * step,
+          );
+          currentCollectibles[index] = {
+            x: sprite.x,
+            y: sprite.y,
+            width: sprite.width,
+            height: sprite.height,
+          };
+          return;
+        }
+
+        if (chaseState.cooldownMs > 0) {
+          return;
+        }
+
+        const dx = playerX - sprite.x;
+        const dy = playerY - sprite.y;
+        if (Math.hypot(dx, dy) > triggerRadius) {
+          return;
+        }
+
+        const crowDefinition = getChaseCollectibles()[index];
+        if (!crowDefinition) {
+          return;
+        }
+
+        if (chaseState.fleeTargetIndex < crowDefinition.fleeTargets.length) {
+          const nextTarget =
+            crowDefinition.fleeTargets[chaseState.fleeTargetIndex];
+          const resolvedTarget = resolveCollectibleFromAnchor(
+            nextTarget.platform,
+            nextTarget.offsetX,
+          );
+
+          chaseState.fleeTargetIndex += 1;
+          chaseState.fleeingTo = nextTarget;
+          chaseState.isFlying = true;
+          chaseState.targetX = resolvedTarget.x;
+          chaseState.targetY = resolvedTarget.y;
+          sprite.scale.x = chaseState.targetX >= sprite.x ? 1 : -1;
+          refreshDebugOverlay();
+          return;
+        }
+
+        chaseState.completed = true;
+        chaseState.isEscaping = true;
+        chaseState.isFlying = true;
+        chaseState.targetX = playerX < sprite.x ? WORLD_WIDTH + 160 : -160;
+        chaseState.targetY = -120;
+        sprite.scale.x = chaseState.targetX >= sprite.x ? 1 : -1;
+        progressCount += 1;
+        redrawGoal();
+        spawnDeliverySuccessEffect(sprite.x, sprite.y - sprite.height * 0.2);
+        refreshDebugOverlay();
+        didChange = true;
+      });
+
+      return didChange;
     },
     updateMovingPlatforms(deltaMs: number, player: Player): void {
       let hasMotion = false;

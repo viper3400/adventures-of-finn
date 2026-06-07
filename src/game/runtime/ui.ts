@@ -121,7 +121,9 @@ export function createHud(app: Application): HudController {
       const modeStatus =
         state.objectiveType === "transport"
           ? `Delivered ${state.progressCount}/${state.totalCollectibles}`
-          : `Treats ${state.progressCount}/${state.totalCollectibles}`;
+          : state.objectiveType === "chase"
+            ? `Crows ${state.progressCount}/${state.totalCollectibles}`
+            : `Treats ${state.progressCount}/${state.totalCollectibles}`;
 
       infoLabel.text = `Level ${state.levelIndex + 1}: ${state.levelName} - ${state.stageName}  ${modeStatus}`;
       timeLabel.text = timerLabel;
