@@ -39,16 +39,20 @@ export interface StartupMenuController {
 }
 
 export function createHud(app: Application): HudController {
+  const chrome = new Graphics();
   const label = new Text({
     text: "",
     style: {
-      fill: 0xffffff,
-      fontSize: 28,
-      fontWeight: "700",
-      stroke: { color: 0x1f2a44, width: 4 },
+      fill: 0xfff7b1,
+      fontFamily: "Courier New, monospace",
+      fontSize: 22,
+      fontWeight: "800",
+      stroke: { color: 0x221141, width: 4 },
     },
   });
-  label.position.set(24, 24);
+  chrome.position.set(16, 16);
+  label.position.set(36, 32);
+  app.stage.addChild(chrome);
   app.stage.addChild(label);
 
   return {
@@ -60,6 +64,16 @@ export function createHud(app: Application): HudController {
           : `Treats ${state.progressCount}/${state.totalCollectibles}`;
 
       label.text = `Level ${state.levelIndex + 1}: ${state.levelName} - ${state.stageName}  ${modeStatus}  Goal ${goalState}`;
+      chrome
+        .clear()
+        .rect(0, 0, label.width + 40, label.height + 24)
+        .fill({ color: 0x26134c, alpha: 0.92 })
+        .rect(6, 6, label.width + 28, label.height + 12)
+        .fill({ color: 0x162e72, alpha: 0.96 })
+        .rect(14, 14, label.width + 12, label.height - 4)
+        .fill({ color: 0x0d1737, alpha: 1 })
+        .rect(14, 14, label.width + 12, 12)
+        .fill({ color: 0x6c39c3, alpha: 1 });
     },
   };
 }
@@ -74,10 +88,18 @@ export function createTransitionOverlay(
   const title = new Text({
     text: "",
     style: {
-      fill: 0xffffff,
-      fontSize: 54,
+      fill: 0xfff7b1,
+      fontFamily: "Courier New, monospace",
+      fontSize: 52,
       fontWeight: "800",
-      stroke: { color: 0x1f2a44, width: 6 },
+      stroke: { color: 0x35115b, width: 7 },
+      dropShadow: {
+        alpha: 1,
+        angle: Math.PI / 4,
+        blur: 0,
+        color: 0x0e0624,
+        distance: 4,
+      },
     },
   });
   title.anchor.set(0.5);
@@ -85,10 +107,11 @@ export function createTransitionOverlay(
   const subtitle = new Text({
     text: "",
     style: {
-      fill: 0xfff4cf,
-      fontSize: 28,
+      fill: 0xb8d8ff,
+      fontFamily: "Courier New, monospace",
+      fontSize: 26,
       fontWeight: "700",
-      stroke: { color: 0x1f2a44, width: 4 },
+      stroke: { color: 0x10203e, width: 4 },
     },
   });
   subtitle.anchor.set(0.5);
@@ -96,22 +119,24 @@ export function createTransitionOverlay(
   const speech = new Text({
     text: "",
     style: {
-      fill: 0xffffff,
-      fontSize: 24,
+      fill: 0xe7f0ff,
+      fontFamily: "Courier New, monospace",
+      fontSize: 22,
       fontWeight: "700",
-      stroke: { color: 0x20324d, width: 3 },
+      stroke: { color: 0x10203e, width: 4 },
       wordWrap: true,
       wordWrapWidth: 360,
     },
   });
 
   const prompt = new Text({
-    text: "Press Space",
+    text: "SPACE WEITER",
     style: {
-      fill: 0xffffff,
-      fontSize: 22,
+      fill: 0xfff48a,
+      fontFamily: "Courier New, monospace",
+      fontSize: 20,
       fontWeight: "700",
-      stroke: { color: 0x1f2a44, width: 4 },
+      stroke: { color: 0x35115b, width: 5 },
     },
   });
   prompt.anchor.set(0.5);
@@ -134,14 +159,37 @@ export function createTransitionOverlay(
     const bubbleWidth = Math.min(app.screen.width * 0.5, 620);
     const bubbleHeight = Math.min(app.screen.height * 0.34, 260);
 
+    backdrop.clear();
     backdrop
-      .clear()
       .rect(0, 0, app.screen.width, app.screen.height)
-      .fill({ color: 0x102030, alpha: 1 });
+      .fill({ color: 0x120826, alpha: 1 })
+      .rect(0, 0, app.screen.width, app.screen.height * 0.22)
+      .fill({ color: 0x2a1050, alpha: 1 })
+      .rect(
+        0,
+        app.screen.height * 0.22,
+        app.screen.width,
+        app.screen.height * 0.26,
+      )
+      .fill({ color: 0x1a2d74, alpha: 1 })
+      .rect(
+        0,
+        app.screen.height * 0.48,
+        app.screen.width,
+        app.screen.height * 0.52,
+      )
+      .fill({ color: 0x0e1737, alpha: 1 });
+
+    for (let y = 0; y < app.screen.height; y += 8) {
+      backdrop
+        .rect(0, y, app.screen.width, 2)
+        .fill({ color: 0xffffff, alpha: 0.035 });
+    }
 
     transitionSpeechBubble.position.set(bubbleX, bubbleY);
     transitionSpeechBubble.width = bubbleWidth;
     transitionSpeechBubble.height = bubbleHeight;
+    transitionSpeechBubble.tint = 0xdfe8ff;
 
     title.position.set(app.screen.width / 2, 82);
     subtitle.position.set(app.screen.width / 2, 132);
@@ -186,12 +234,13 @@ export function createTitleScreen(
   const backdrop = new Graphics();
   const titleImage = new Sprite(titleTexture);
   const prompt = new Text({
-    text: "Press Space",
+    text: "SPACE START",
     style: {
-      fill: 0xffffff,
-      fontSize: 24,
+      fill: 0xfff48a,
+      fontFamily: "Courier New, monospace",
+      fontSize: 22,
       fontWeight: "800",
-      stroke: { color: 0x1f2a44, width: 4 },
+      stroke: { color: 0x35115b, width: 5 },
     },
   });
 
@@ -205,10 +254,32 @@ export function createTitleScreen(
   app.stage.addChild(overlay);
 
   function layout(): void {
+    backdrop.clear();
     backdrop
-      .clear()
       .rect(0, 0, app.screen.width, app.screen.height)
-      .fill({ color: 0x102030, alpha: 1 });
+      .fill({ color: 0x120826, alpha: 1 })
+      .rect(0, 0, app.screen.width, app.screen.height * 0.22)
+      .fill({ color: 0x2a1050, alpha: 1 })
+      .rect(
+        0,
+        app.screen.height * 0.22,
+        app.screen.width,
+        app.screen.height * 0.26,
+      )
+      .fill({ color: 0x1a2d74, alpha: 1 })
+      .rect(
+        0,
+        app.screen.height * 0.48,
+        app.screen.width,
+        app.screen.height * 0.52,
+      )
+      .fill({ color: 0x0e1737, alpha: 1 });
+
+    for (let y = 0; y < app.screen.height; y += 8) {
+      backdrop
+        .rect(0, y, app.screen.width, 2)
+        .fill({ color: 0xffffff, alpha: 0.035 });
+    }
 
     const maxWidth = app.screen.width * 0.9;
     const maxHeight = app.screen.height * 0.78;
