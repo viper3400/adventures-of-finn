@@ -7,7 +7,7 @@ This file describes the current state of the game implementation and the assumpt
 - Runtime entrypoint: [src/main.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/main.ts:1)
 - Main game bootstrap and loop: [src/game/game.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/game/game.ts:34)
 - Shared tuning constants: [src/game/constants.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/game/constants.ts:1)
-- Level definitions: [src/game/levels.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/game/levels.ts:1)
+- Level definitions: [src/game/levels/index.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/game/levels/index.ts:1)
 - Shared types: [src/game/types.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/game/types.ts:1)
 
 ## Game Summary
@@ -76,7 +76,8 @@ This file describes the current state of the game implementation and the assumpt
 
 ## Level System
 
-- Level data lives in `src/game/levels.ts`.
+- Level data lives in `src/game/levels/`.
+- Each level has its own folder with an `index.ts` plus one file per stage.
 - Each level is defined by the `LevelDefinition` type.
 - Each level owns its own transition copy:
   - `introText`
