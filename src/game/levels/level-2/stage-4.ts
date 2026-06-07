@@ -35,7 +35,14 @@ const stage4: StageDefinition = {
         },
       },
     },
-    { id: 4, x: 760, y: WORLD_HEIGHT - 360, w: 120, h: 20 },
+    {
+      id: 4, x: 760, y: WORLD_HEIGHT - 440, w: 120, h: 20, motion: {
+        vertical: {
+          distance: 120,
+          speed: 90,
+        },
+      },
+    },
     { id: 5, x: 950, y: WORLD_HEIGHT - 470, w: 140, h: 20 },
     { id: 6, x: 1090, y: WORLD_HEIGHT - 280, w: 100, h: 20 },
   ],

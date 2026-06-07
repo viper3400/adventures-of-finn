@@ -12,7 +12,14 @@ const stage6: StageDefinition = {
     { id: 2, x: 350, y: WORLD_HEIGHT - 300, w: 110, h: 20 },
     { id: 3, x: 510, y: WORLD_HEIGHT - 420, w: 110, h: 20 },
     { id: 4, x: 710, y: WORLD_HEIGHT - 300, w: 130, h: 20 },
-    { id: 5, x: 910, y: WORLD_HEIGHT - 190, w: 130, h: 20 },
+    {
+      id: 5, x: 910, y: WORLD_HEIGHT - 290, w: 130, h: 20, motion: {
+        vertical: {
+          distance: 120,
+          speed: 90,
+        }
+      },
+    },
     { id: 6, x: 1080, y: WORLD_HEIGHT - 340, w: 110, h: 20 },
   ],
   goal: { platform: 6, offsetX: 82, width: 64, height: 64 },
