@@ -1,0 +1,68 @@
+import { Assets, type Texture } from "pixi.js";
+
+import { LEVELS } from "../levels";
+
+export interface GameAssets {
+  playerTexture: Texture;
+  speechBubbleTexture: Texture;
+  goalClosedTexture: Texture;
+  goalOpenTexture: Texture;
+  collectibleTextures: Map<string, Texture>;
+  storeTextures: Map<string, Texture>;
+}
+
+export async function loadGameAssets(): Promise<GameAssets> {
+  const playerTexture = await Assets.load("/assets/image_comic.png");
+  const speechBubbleTexture = await Assets.load(
+    "/assets/chat-speech-bubble.svg",
+  );
+  const goalClosedTexture = await Assets.load("/assets/door-closed.svg");
+  const goalOpenTexture = await Assets.load("/assets/door-open.svg");
+
+  const collectibleTextures = new Map<string, Texture>();
+  const collectibleAssetPaths = Array.from(
+    new Set(
+      LEVELS.flatMap((level) =>
+        level.stages.map((stage) => stage.collectibleVisual.assetPath),
+      ),
+    ),
+  );
+
+  const collectibleTextureEntries = await Promise.all(
+    collectibleAssetPaths.map(
+      async (assetPath) => [assetPath, await Assets.load(assetPath)] as const,
+    ),
+  );
+  collectibleTextureEntries.forEach(([assetPath, texture]) => {
+    collectibleTextures.set(assetPath, texture);
+  });
+
+  const storeTextures = new Map<string, Texture>();
+  const storeAssetPaths = Array.from(
+    new Set(
+      LEVELS.flatMap((level) =>
+        level.stages
+          .map((stage) => stage.store?.assetPath)
+          .filter((assetPath): assetPath is string => Boolean(assetPath)),
+      ),
+    ),
+  );
+
+  const storeTextureEntries = await Promise.all(
+    storeAssetPaths.map(
+      async (assetPath) => [assetPath, await Assets.load(assetPath)] as const,
+    ),
+  );
+  storeTextureEntries.forEach(([assetPath, texture]) => {
+    storeTextures.set(assetPath, texture);
+  });
+
+  return {
+    playerTexture,
+    speechBubbleTexture,
+    goalClosedTexture,
+    goalOpenTexture,
+    collectibleTextures,
+    storeTextures,
+  };
+}

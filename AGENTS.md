@@ -5,7 +5,13 @@ This file describes the current state of the game implementation and the assumpt
 ## Project Shape
 
 - Runtime entrypoint: [src/main.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/main.ts:1)
-- Main game bootstrap and loop: [src/game/game.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/game/game.ts:34)
+- Main game bootstrap and orchestration: [src/game/game.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/game/game.ts:1)
+- Runtime modules live in `src/game/runtime/`:
+  - `assets.ts`: shared asset loading
+  - `input.ts`: keyboard input state and debug actions
+  - `player.ts`: player sprite setup and movement/physics
+  - `stage-runtime.ts`: stage loading, platforms, collectibles, goal, store, debug labels
+  - `ui.ts`: HUD and transition overlay
 - Shared tuning constants: [src/game/constants.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/game/constants.ts:1)
 - Level definitions: [src/game/levels/index.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/game/levels/index.ts:1)
 - Shared types: [src/game/types.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/game/types.ts:1)
@@ -88,7 +94,7 @@ This file describes the current state of the game implementation and the assumpt
   - `width`
   - `height`
 - Transport stages additionally define a platform-anchored `store`.
-- The active stage is loaded by `loadStage()` in `src/game/game.ts`.
+- The active stage is loaded by `loadStage()` in `src/game/runtime/stage-runtime.ts`.
 - Stage loading currently:
   - updates spawn position
   - destroys old floating platform graphics
@@ -102,7 +108,7 @@ This file describes the current state of the game implementation and the assumpt
 - If the current stage is the last stage of the current level, goal completion advances to the first stage of the next level.
 - Before a new level starts, the game shows a full-screen intro with the level number and level name, and waits for `Space`.
 - After the last stage of a level, the game shows a `Level geschafft!` screen before advancing, and waits for `Space`.
-- Both transition screens use an overlay with a large dog image and a speech bubble line, driven from `game.ts`.
+- Both transition screens use an overlay with a large dog image and a speech bubble line, driven from `src/game/runtime/ui.ts`.
 
 ## Goal System
 
@@ -161,9 +167,9 @@ This file describes the current state of the game implementation and the assumpt
 
 ## Suggested Next Refactors
 
-- Split player movement/physics from `src/game/game.ts` into a dedicated player module.
-- Split level/world rendering into a world module.
-- Split HUD into its own module.
+- Add an explicit gameplay state model instead of inferring flow from overlay visibility and stage indexes.
+- Separate progression/state-flow rules from `game.ts` orchestration so intros, completions, respawns, and debug skips are less coupled.
+- Add validation helpers for level data and platform anchors.
 - Add explicit level completion state instead of immediately switching levels on goal overlap.
 
 ## Agent Guidance
