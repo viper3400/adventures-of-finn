@@ -25,7 +25,7 @@ This file describes the current state of the game implementation and the assumpt
 - The progression model is:
   - a level contains one or more stages
   - each stage has its own spawn point, platforms, collectibles, and goal
-- Each stage also has a `mode`:
+- Each stage owns a typed `objective`:
   - `collect`: pickups count immediately on contact
   - `transport`: pickups must be carried to a store before they count
 - The current content is:
@@ -86,22 +86,28 @@ This file describes the current state of the game implementation and the assumpt
 - Level data lives in `src/game/levels/`.
 - Each level has its own folder with an `index.ts` plus one file per stage.
 - Each level is defined by the `LevelDefinition` type.
-- Each level owns its own transition copy:
-  - `introText`
-  - `completionText`
+- Each level owns structured transition content:
+  - `intro`
+  - `completion`
 - Each stage is defined by the `StageDefinition` type.
-- Each stage owns its collectible visual via `collectibleVisual`:
-  - `assetPath`
-  - `width`
-  - `height`
-- Transport stages additionally define a platform-anchored `store`.
+- Each stage owns its objective-owned collectible presentation and placement:
+  - `objective.collectibleVisual`
+  - `objective.collectibles`
+- Transport stages additionally define `objective.store`.
+- Stages may additionally declare:
+  - `checkpoints`
+  - `hazards`
+  - `decor`
+  - `presentation`
 - The active stage is loaded by `loadStage()` in `src/game/runtime/stage-runtime.ts`.
 - Stage loading currently:
   - updates spawn position
   - destroys old floating platform graphics
   - destroys old collectible graphics
+  - destroys old decor sprites
   - rebuilds current stage platforms
   - rebuilds current stage collectibles
+  - resolves checkpoint and hazard data for the active stage
   - redraws the goal marker
   - updates the level label
   - resets the player to spawn
@@ -144,6 +150,7 @@ This file describes the current state of the game implementation and the assumpt
 ## Important Current Behaviors
 
 - The player spawns already standing on the ground. Spawn height is aligned to the paw landing logic, not a hardcoded sprite center.
+- Stage spawns are defined as `spawn.x` plus `spawn.surfaceY`.
 - Falling below the world resets the player to the current level spawn.
 - The ground platform is special:
   - it is stored as `platforms[0]`
@@ -170,6 +177,10 @@ This file describes the current state of the game implementation and the assumpt
 
 - Prefer editing `src/game/levels.ts` instead of hardcoding positions in `game.ts`.
 - If you add new level features, extend `LevelDefinition` first.
+- Prefer reusing the shared schema primitives in `types.ts`:
+  - `SpawnPointDefinition`
+  - `RectZoneDefinition`
+  - `VisualDefinition`
 - If you add collectibles, enemies, hazards, or checkpoints, they should probably become level data, not ad hoc state inside the ticker callback.
 
 ## Suggested Next Refactors

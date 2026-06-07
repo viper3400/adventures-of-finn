@@ -1,5 +1,6 @@
 import { Assets, type Texture } from "pixi.js";
 
+import { getStageCollectibleVisual, getStageStore } from "../level-schema";
 import { LEVELS } from "../levels";
 
 export interface GameAssets {
@@ -9,6 +10,7 @@ export interface GameAssets {
   goalOpenTexture: Texture;
   collectibleTextures: Map<string, Texture>;
   storeTextures: Map<string, Texture>;
+  decorTextures: Map<string, Texture>;
 }
 
 export async function loadGameAssets(): Promise<GameAssets> {
@@ -23,7 +25,7 @@ export async function loadGameAssets(): Promise<GameAssets> {
   const collectibleAssetPaths = Array.from(
     new Set(
       LEVELS.flatMap((level) =>
-        level.stages.map((stage) => stage.collectibleVisual.assetPath),
+        level.stages.map((stage) => getStageCollectibleVisual(stage).assetPath),
       ),
     ),
   );
@@ -42,7 +44,7 @@ export async function loadGameAssets(): Promise<GameAssets> {
     new Set(
       LEVELS.flatMap((level) =>
         level.stages
-          .map((stage) => stage.store?.assetPath)
+          .map((stage) => getStageStore(stage)?.assetPath)
           .filter((assetPath): assetPath is string => Boolean(assetPath)),
       ),
     ),
@@ -57,6 +59,25 @@ export async function loadGameAssets(): Promise<GameAssets> {
     storeTextures.set(assetPath, texture);
   });
 
+  const decorTextures = new Map<string, Texture>();
+  const decorAssetPaths = Array.from(
+    new Set(
+      LEVELS.flatMap((level) =>
+        level.stages.flatMap((stage) =>
+          (stage.decor ?? []).map((decor) => decor.visual.assetPath),
+        ),
+      ),
+    ),
+  );
+  const decorTextureEntries = await Promise.all(
+    decorAssetPaths.map(
+      async (assetPath) => [assetPath, await Assets.load(assetPath)] as const,
+    ),
+  );
+  decorTextureEntries.forEach(([assetPath, texture]) => {
+    decorTextures.set(assetPath, texture);
+  });
+
   return {
     playerTexture,
     speechBubbleTexture,
@@ -64,5 +85,6 @@ export async function loadGameAssets(): Promise<GameAssets> {
     goalOpenTexture,
     collectibleTextures,
     storeTextures,
+    decorTextures,
   };
 }

@@ -1,12 +1,12 @@
 import { Container, Graphics, Sprite, Text, type Application } from "pixi.js";
 
-import type { StageMode } from "../types";
+import type { StageObjectiveType } from "../types";
 
 export interface HudState {
   levelIndex: number;
   levelName: string;
   stageName: string;
-  stageMode: StageMode;
+  objectiveType: StageObjectiveType;
   progressCount: number;
   totalCollectibles: number;
   hasCarriedCollectible: boolean;
@@ -40,7 +40,7 @@ export function createHud(app: Application): HudController {
     update(state: HudState): void {
       const goalState = state.goalOpen ? "Open" : "Closed";
       const modeStatus =
-        state.stageMode === "transport"
+        state.objectiveType === "transport"
           ? `Delivered ${state.progressCount}/${state.totalCollectibles} Carrying ${state.hasCarriedCollectible ? "Yes" : "No"}`
           : `Treats ${state.progressCount}/${state.totalCollectibles}`;
 

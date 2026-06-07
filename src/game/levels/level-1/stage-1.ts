@@ -3,13 +3,9 @@ import type { StageDefinition } from "../../types";
 
 const stage1: StageDefinition = {
   name: "Stage 1",
-  mode: "collect",
-  spawnX: 100,
-  spawnSurfaceY: WORLD_HEIGHT - GROUND_HEIGHT,
-  collectibleVisual: {
-    assetPath: "/assets/sausage.svg",
-    width: 40,
-    height: 40,
+  spawn: {
+    x: 100,
+    surfaceY: WORLD_HEIGHT - GROUND_HEIGHT,
   },
   platforms: [
     { id: 1, x: 200, y: WORLD_HEIGHT - 150, w: 150, h: 20 },
@@ -19,13 +15,21 @@ const stage1: StageDefinition = {
     { id: 5, x: 400, y: WORLD_HEIGHT - 400, w: 150, h: 20 },
   ],
   goal: { platform: 4, offsetX: 120, width: 64, height: 64 },
-  collectibles: [
-    { platform: "ground", offsetX: 400 },
-    { platform: 1, offsetX: 75 },
-    { platform: 2, offsetX: 75 },
-    { platform: 3, offsetX: 70 },
-    { platform: 5, offsetX: 75 },
-  ],
+  objective: {
+    type: "collect",
+    collectibleVisual: {
+      assetPath: "/assets/sausage.svg",
+      width: 40,
+      height: 40,
+    },
+    collectibles: [
+      { platform: "ground", offsetX: 400 },
+      { platform: 1, offsetX: 75 },
+      { platform: 2, offsetX: 75 },
+      { platform: 3, offsetX: 70 },
+      { platform: 5, offsetX: 75 },
+    ],
+  },
 };
 
 export default stage1;

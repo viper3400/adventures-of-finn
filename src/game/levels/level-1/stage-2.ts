@@ -3,13 +3,9 @@ import type { StageDefinition } from "../../types";
 
 const stage2: StageDefinition = {
   name: "Stage 2",
-  mode: "collect",
-  spawnX: 120,
-  spawnSurfaceY: WORLD_HEIGHT - GROUND_HEIGHT,
-  collectibleVisual: {
-    assetPath: "/assets/sausage.svg",
-    width: 40,
-    height: 40,
+  spawn: {
+    x: 120,
+    surfaceY: WORLD_HEIGHT - GROUND_HEIGHT,
   },
   platforms: [
     { id: 1, x: 170, y: WORLD_HEIGHT - 120, w: 120, h: 18 },
@@ -20,13 +16,31 @@ const stage2: StageDefinition = {
     { id: 6, x: 840, y: WORLD_HEIGHT - 140, w: 110, h: 18 },
   ],
   goal: { platform: 5, offsetX: 117, width: 64, height: 64 },
-  collectibles: [
-    { platform: "ground", offsetX: 405 },
-    { platform: 1, offsetX: 60 },
-    { platform: 2, offsetX: 70 },
-    { platform: 3, offsetX: 65 },
-    { platform: 4, offsetX: 80 },
-    { platform: 6, offsetX: 10 },
+  objective: {
+    type: "collect",
+    collectibleVisual: {
+      assetPath: "/assets/sausage.svg",
+      width: 40,
+      height: 40,
+    },
+    collectibles: [
+      { platform: "ground", offsetX: 405 },
+      { platform: 1, offsetX: 60 },
+      { platform: 2, offsetX: 70 },
+      { platform: 3, offsetX: 65 },
+      { platform: 4, offsetX: 80 },
+      { platform: 6, offsetX: 10 },
+    ],
+  },
+  checkpoints: [
+    {
+      id: "mid-ramp",
+      label: "Midway",
+      spawn: {
+        x: 600,
+        surfaceY: WORLD_HEIGHT - 300,
+      },
+    },
   ],
 };
 

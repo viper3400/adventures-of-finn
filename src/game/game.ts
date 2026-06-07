@@ -1,5 +1,10 @@
 import { Application, UPDATE_PRIORITY } from "pixi.js";
 
+import {
+  getStageCollectibles,
+  getStageObjectiveType,
+  getTransitionContent,
+} from "./level-schema";
 import { LEVELS } from "./levels";
 import { loadGameAssets } from "./runtime/assets";
 import { createInputController } from "./runtime/input";
@@ -44,9 +49,9 @@ export async function startGame(): Promise<void> {
       levelIndex: stageRuntime.getCurrentLevelIndex(),
       levelName: level.name,
       stageName: stage.name,
-      stageMode: stage.mode,
+      objectiveType: getStageObjectiveType(stage),
       progressCount: stageRuntime.getProgressCount(),
-      totalCollectibles: stage.collectibles.length,
+      totalCollectibles: getStageCollectibles(stage).length,
       hasCarriedCollectible: stageRuntime.hasCarriedCollectible(),
       goalOpen: stageRuntime.isGoalOpen(),
     });
@@ -93,16 +98,22 @@ export async function startGame(): Promise<void> {
 
   function showLevelIntro(levelIndex: number): void {
     const level = LEVELS[levelIndex];
-    transition.show(`Level ${levelIndex + 1}`, level.name, level.introText);
+    const content = getTransitionContent(
+      level.intro,
+      `Level ${levelIndex + 1}`,
+      level.name,
+    );
+    transition.show(content.title, content.subtitle, content.speech);
   }
 
   function showLevelComplete(levelIndex: number): void {
     const level = LEVELS[levelIndex];
-    transition.show(
+    const content = getTransitionContent(
+      level.completion,
       "Level geschafft!",
       `${level.name} abgeschlossen`,
-      level.completionText,
     );
+    transition.show(content.title, content.subtitle, content.speech);
   }
 
   function jumpToNextStageDebug(): void {

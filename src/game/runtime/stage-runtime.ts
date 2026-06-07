@@ -1,6 +1,12 @@
 import { Container, Graphics, Sprite, Text } from "pixi.js";
 
 import {
+  getStageCollectibles,
+  getStageCollectibleVisual,
+  getStageObjectiveType,
+  getStageStore,
+} from "../level-schema";
+import {
   GROUND_HEIGHT,
   PLAYER_FEET_HEIGHT,
   PLAYER_FEET_OFFSET_Y,
@@ -12,11 +18,15 @@ import {
 } from "../constants";
 import { LEVELS } from "../levels";
 import type {
+  DecorDefinition,
+  HazardDefinition,
   LevelDefinition,
   Platform,
   Player,
+  ResolvedCheckpoint,
   ResolvedCollectible,
   ResolvedGoal,
+  ResolvedHazard,
   ResolvedStore,
   StageDefinition,
 } from "../types";
@@ -91,6 +101,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
 
   const levelPlatformGraphics: Graphics[] = [];
   const collectibleSprites: Sprite[] = [];
+  const decorSprites: Sprite[] = [];
   const deliveryEffects: DeliveryEffect[] = [];
   const debugTexts: Text[] = [];
 
@@ -101,12 +112,14 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   let currentStageIndex = 0;
   let progressCount = 0;
   let spawnPoint: SpawnPoint = {
-    x: LEVELS[0].stages[0].spawnX,
-    y: getStandingY(LEVELS[0].stages[0].spawnSurfaceY),
+    x: LEVELS[0].stages[0].spawn.x,
+    y: getStandingY(LEVELS[0].stages[0].spawn.surfaceY),
   };
   let currentGoal: ResolvedGoal | null = null;
   let currentCollectibles: ResolvedCollectible[] = [];
   let currentStore: ResolvedStore | null = null;
+  let currentCheckpoints: ResolvedCheckpoint[] = [];
+  let currentHazards: ResolvedHazard[] = [];
 
   function getStandingY(surfaceY: number): number {
     return surfaceY - PLAYER_FEET_OFFSET_Y - PLAYER_FEET_HEIGHT / 2;
@@ -157,37 +170,57 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   }
 
   function resolveCollectibles(stage: StageDefinition): ResolvedCollectible[] {
-    return stage.collectibles.map((collectible) => {
+    const collectibleVisual = getStageCollectibleVisual(stage);
+
+    return getStageCollectibles(stage).map((collectible) => {
       const platform = getAnchorPlatformBounds(stage, collectible.platform);
       return {
         x: platform.x + collectible.offsetX,
-        y: platform.y - stage.collectibleVisual.height / 2 - 8,
-        width: stage.collectibleVisual.width,
-        height: stage.collectibleVisual.height,
+        y: platform.y - collectibleVisual.height / 2 - 8,
+        width: collectibleVisual.width,
+        height: collectibleVisual.height,
       };
     });
   }
 
   function resolveStore(stage: StageDefinition): ResolvedStore | null {
-    if (!stage.store) {
+    const store = getStageStore(stage);
+    if (!store) {
       return null;
     }
 
-    const platform = getAnchorPlatformBounds(stage, stage.store.platform);
-    const x = platform.x + stage.store.offsetX - stage.store.width / 2;
-    const y = platform.y - stage.store.height;
+    const platform = getAnchorPlatformBounds(stage, store.platform);
+    const x = platform.x + store.offsetX - store.width / 2;
+    const y = platform.y - store.height;
 
     return {
       x,
       y,
-      width: stage.store.width,
-      height: stage.store.height,
-      assetPath: stage.store.assetPath,
+      width: store.width,
+      height: store.height,
+      assetPath: store.assetPath,
     };
   }
 
+  function resolveCheckpoints(stage: StageDefinition): ResolvedCheckpoint[] {
+    return (stage.checkpoints ?? []).map((checkpoint) => ({
+      id: checkpoint.id,
+      x: checkpoint.spawn.x,
+      y: getStandingY(checkpoint.spawn.surfaceY),
+      label: checkpoint.label,
+    }));
+  }
+
+  function resolveHazards(stage: StageDefinition): ResolvedHazard[] {
+    return (stage.hazards ?? []).map((hazard: HazardDefinition) => ({
+      id: hazard.id,
+      kind: hazard.kind,
+      zone: { ...hazard.zone },
+    }));
+  }
+
   function isTransportStage(stage = getCurrentStage()): boolean {
-    return stage.mode === "transport";
+    return getStageObjectiveType(stage) === "transport";
   }
 
   function clearDebugOverlay(): void {
@@ -255,7 +288,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   }
 
   function isGoalCurrentlyOpen(): boolean {
-    return progressCount >= getCurrentStage().collectibles.length;
+    return progressCount >= getStageCollectibles(getCurrentStage()).length;
   }
 
   function redrawGoal(): void {
@@ -271,20 +304,49 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     goalSprite.height = currentGoal.height;
   }
 
+  function clearDecor(): void {
+    decorSprites.forEach((sprite) => {
+      gameWorld.removeChild(sprite);
+      sprite.destroy();
+    });
+    decorSprites.length = 0;
+  }
+
+  function addDecor(stage: StageDefinition): void {
+    (stage.decor ?? []).forEach((decor: DecorDefinition) => {
+      const texture = assets.decorTextures.get(decor.visual.assetPath);
+      if (!texture) {
+        throw new Error(`Missing decor texture "${decor.visual.assetPath}"`);
+      }
+
+      const sprite = new Sprite(texture);
+      sprite.anchor.set(0.5);
+      sprite.position.set(decor.position.x, decor.position.y);
+      sprite.width = decor.visual.width;
+      sprite.height = decor.visual.height;
+      sprite.alpha = decor.alpha ?? 1;
+      decorSprites.push(sprite);
+      gameWorld.addChildAt(sprite, 1);
+    });
+  }
+
   return {
     gameWorld,
     loadStage(levelIndex: number, stageIndex: number): void {
       currentLevelIndex = levelIndex;
       currentStageIndex = stageIndex;
       const stage = LEVELS[levelIndex].stages[stageIndex];
+      const collectibleVisual = getStageCollectibleVisual(stage);
 
       spawnPoint = {
-        x: stage.spawnX,
-        y: getStandingY(stage.spawnSurfaceY),
+        x: stage.spawn.x,
+        y: getStandingY(stage.spawn.surfaceY),
       };
       currentGoal = resolveGoal(stage);
       currentCollectibles = resolveCollectibles(stage);
       currentStore = resolveStore(stage);
+      currentCheckpoints = resolveCheckpoints(stage);
+      currentHazards = resolveHazards(stage);
 
       platforms.splice(1);
       levelPlatformGraphics.forEach((gfx) => {
@@ -298,6 +360,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         sprite.destroy();
       });
       collectibleSprites.length = 0;
+      clearDecor();
 
       if (storeSprite) {
         gameWorld.removeChild(storeSprite);
@@ -331,12 +394,14 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         });
       });
 
+      addDecor(stage);
+
       const collectibleTexture = assets.collectibleTextures.get(
-        stage.collectibleVisual.assetPath,
+        collectibleVisual.assetPath,
       );
       if (!collectibleTexture) {
         throw new Error(
-          `Missing collectible texture "${stage.collectibleVisual.assetPath}"`,
+          `Missing collectible texture "${collectibleVisual.assetPath}"`,
         );
       }
 
@@ -365,9 +430,12 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       carriedCollectibleSprite = new Sprite(collectibleTexture);
       carriedCollectibleSprite.anchor.set(0.5);
       carriedCollectibleSprite.visible = false;
-      carriedCollectibleSprite.width = stage.collectibleVisual.width;
-      carriedCollectibleSprite.height = stage.collectibleVisual.height;
+      carriedCollectibleSprite.width = collectibleVisual.width;
+      carriedCollectibleSprite.height = collectibleVisual.height;
       gameWorld.addChild(carriedCollectibleSprite);
+
+      void currentCheckpoints;
+      void currentHazards;
 
       rebuildDebugOverlay(stage);
       redrawGoal();
