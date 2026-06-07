@@ -4,6 +4,10 @@ import { LEVELS } from "./levels";
 import { loadGameAssets } from "./runtime/assets";
 import { createInputController } from "./runtime/input";
 import { createPlayer } from "./runtime/player";
+import {
+  createGameFlowController,
+  type GameFlowEffect,
+} from "./runtime/state-flow";
 import { createStageRuntime } from "./runtime/stage-runtime";
 import { createHud, createTransitionOverlay } from "./runtime/ui";
 
@@ -16,6 +20,7 @@ export async function startGame(): Promise<void> {
   const input = createInputController();
   const stageRuntime = createStageRuntime(assets);
   app.stage.addChild(stageRuntime.gameWorld);
+  const gameFlow = createGameFlowController(LEVELS);
 
   const hud = createHud(app);
   const transition = createTransitionOverlay(
@@ -67,48 +72,47 @@ export async function startGame(): Promise<void> {
     updateHud();
   }
 
+  function applyGameFlowEffects(effects: GameFlowEffect[]): void {
+    effects.forEach((effect) => {
+      switch (effect.type) {
+        case "hideTransition":
+          transition.hide();
+          break;
+        case "loadStage":
+          loadStage(effect.stage.levelIndex, effect.stage.stageIndex);
+          break;
+        case "showLevelIntro":
+          showLevelIntro(effect.levelIndex);
+          break;
+        case "showLevelComplete":
+          showLevelComplete(effect.levelIndex);
+          break;
+      }
+    });
+  }
+
   function showLevelIntro(levelIndex: number): void {
     const level = LEVELS[levelIndex];
     transition.show(`Level ${levelIndex + 1}`, level.name, level.introText);
   }
 
-  function showLevelComplete(levelIndex: number, onComplete: () => void): void {
+  function showLevelComplete(levelIndex: number): void {
     const level = LEVELS[levelIndex];
     transition.show(
       "Level geschafft!",
       `${level.name} abgeschlossen`,
       level.completionText,
-      onComplete,
     );
   }
 
   function jumpToNextStageDebug(): void {
-    if (transition.isVisible()) {
-      transition.close();
-    }
-
-    const level = stageRuntime.getCurrentLevel();
-    const hasNextStage =
-      stageRuntime.getCurrentStageIndex() + 1 < level.stages.length;
-
-    if (hasNextStage) {
-      loadStage(
-        stageRuntime.getCurrentLevelIndex(),
-        stageRuntime.getCurrentStageIndex() + 1,
-      );
-      return;
-    }
-
-    const nextLevelIndex =
-      (stageRuntime.getCurrentLevelIndex() + 1) % LEVELS.length;
-    loadStage(nextLevelIndex, 0);
+    applyGameFlowEffects(gameFlow.skipForward());
   }
 
   updateViewport();
   app.renderer.on("resize", updateViewport);
 
-  loadStage(0, 0);
-  showLevelIntro(0);
+  applyGameFlowEffects(gameFlow.start());
 
   app.ticker.add(
     () => {
@@ -118,11 +122,12 @@ export async function startGame(): Promise<void> {
 
       if (input.consumeStageSkip()) {
         jumpToNextStageDebug();
+        return;
       }
 
-      if (transition.isVisible()) {
+      if (!gameFlow.isPlaying()) {
         if (input.consumeTransitionClose()) {
-          transition.close();
+          applyGameFlowEffects(gameFlow.advanceTransition());
           input.markJumpUsed();
         }
         return;
@@ -148,24 +153,7 @@ export async function startGame(): Promise<void> {
       }
 
       if (stageRuntime.checkGoalReached(player.sprite.x, player.sprite.y)) {
-        const level = stageRuntime.getCurrentLevel();
-        const hasNextStage =
-          stageRuntime.getCurrentStageIndex() + 1 < level.stages.length;
-
-        if (hasNextStage) {
-          loadStage(
-            stageRuntime.getCurrentLevelIndex(),
-            stageRuntime.getCurrentStageIndex() + 1,
-          );
-          return;
-        }
-
-        const nextLevelIndex =
-          (stageRuntime.getCurrentLevelIndex() + 1) % LEVELS.length;
-        showLevelComplete(stageRuntime.getCurrentLevelIndex(), () => {
-          loadStage(nextLevelIndex, 0);
-          showLevelIntro(nextLevelIndex);
-        });
+        applyGameFlowEffects(gameFlow.advanceFromGoal());
         return;
       }
 

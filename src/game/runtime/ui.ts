@@ -18,14 +18,8 @@ export interface HudController {
 }
 
 export interface TransitionController {
-  isVisible(): boolean;
-  show(
-    title: string,
-    subtitle: string,
-    speech: string,
-    onComplete?: (() => void) | null,
-  ): void;
-  close(): void;
+  show(title: string, subtitle: string, speech: string): void;
+  hide(): void;
   layout(): void;
 }
 
@@ -109,8 +103,6 @@ export function createTransitionOverlay(
 
   const transitionDog = new Sprite(playerTexture);
   const transitionSpeechBubble = new Sprite(speechBubbleTexture);
-  let onTransitionComplete: (() => void) | null = null;
-
   overlay.visible = false;
   overlay.addChild(backdrop);
   overlay.addChild(transitionDog);
@@ -157,29 +149,15 @@ export function createTransitionOverlay(
   }
 
   return {
-    isVisible: () => overlay.visible,
-    show(
-      nextTitle: string,
-      nextSubtitle: string,
-      nextSpeech: string,
-      nextOnComplete: (() => void) | null = null,
-    ): void {
+    show(nextTitle: string, nextSubtitle: string, nextSpeech: string): void {
       title.text = nextTitle;
       subtitle.text = nextSubtitle;
       speech.text = nextSpeech;
-      onTransitionComplete = nextOnComplete;
       overlay.visible = true;
       layout();
     },
-    close(): void {
-      if (!overlay.visible) {
-        return;
-      }
-
+    hide(): void {
       overlay.visible = false;
-      const pendingCallback = onTransitionComplete;
-      onTransitionComplete = null;
-      pendingCallback?.();
     },
     layout,
   };

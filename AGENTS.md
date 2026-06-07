@@ -10,6 +10,7 @@ This file describes the current state of the game implementation and the assumpt
   - `assets.ts`: shared asset loading
   - `input.ts`: keyboard input state and debug actions
   - `player.ts`: player sprite setup and movement/physics
+  - `state-flow.ts`: explicit gameplay flow state machine for intros, active play, and level completion
   - `stage-runtime.ts`: stage loading, platforms, collectibles, goal, store, debug labels
   - `ui.ts`: HUD and transition overlay
 - Shared tuning constants: [src/game/constants.ts](/Users/Jan/Documents/Development/pixijs/first/first-p/src/game/constants.ts:1)
@@ -109,6 +110,12 @@ This file describes the current state of the game implementation and the assumpt
 - Before a new level starts, the game shows a full-screen intro with the level number and level name, and waits for `Space`.
 - After the last stage of a level, the game shows a `Level geschafft!` screen before advancing, and waits for `Space`.
 - Both transition screens use an overlay with a large dog image and a speech bubble line, driven from `src/game/runtime/ui.ts`.
+- Runtime progression is explicit:
+  - `boot`
+  - `levelIntro`
+  - `playing`
+  - `levelComplete`
+- Transition visibility no longer determines gameplay flow by itself; `src/game/runtime/state-flow.ts` is the source of truth.
 
 ## Goal System
 
@@ -167,10 +174,9 @@ This file describes the current state of the game implementation and the assumpt
 
 ## Suggested Next Refactors
 
-- Add an explicit gameplay state model instead of inferring flow from overlay visibility and stage indexes.
-- Separate progression/state-flow rules from `game.ts` orchestration so intros, completions, respawns, and debug skips are less coupled.
+- Move respawn handling into the state-flow module if death/failure states become more complex than an instant reset.
 - Add validation helpers for level data and platform anchors.
-- Add explicit level completion state instead of immediately switching levels on goal overlap.
+- Extend state-flow for pause/menu/checkpoint flows before adding hazards or dialogue-heavy sequences.
 
 ## Agent Guidance
 
