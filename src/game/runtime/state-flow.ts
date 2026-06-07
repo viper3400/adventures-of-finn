@@ -7,12 +7,14 @@ interface StageRef {
 
 export type GameFlowState =
   | { kind: "boot" }
+  | { kind: "title"; initialStage: StageRef }
   | { kind: "levelIntro"; stage: StageRef }
   | { kind: "playing"; stage: StageRef }
   | { kind: "levelComplete"; completedLevelIndex: number; nextStage: StageRef };
 
 export type GameFlowEffect =
   | { type: "hideTransition" }
+  | { type: "showTitleScreen" }
   | { type: "loadStage"; stage: StageRef }
   | { type: "showLevelIntro"; levelIndex: number }
   | { type: "showLevelComplete"; levelIndex: number };
@@ -52,6 +54,8 @@ export function createGameFlowController(
     switch (state.kind) {
       case "boot":
         return { levelIndex: 0, stageIndex: 0 };
+      case "title":
+        return state.initialStage;
       case "levelIntro":
       case "playing":
         return state.stage;
@@ -68,18 +72,24 @@ export function createGameFlowController(
       return state.kind === "playing";
     },
     start(initialStage = { levelIndex: 0, stageIndex: 0 }): GameFlowEffect[] {
-      state = { kind: "levelIntro", stage: initialStage };
+      state = { kind: "title", initialStage };
 
-      return [
-        { type: "loadStage", stage: initialStage },
-        { type: "showLevelIntro", levelIndex: initialStage.levelIndex },
-      ];
+      return [{ type: "showTitleScreen" }];
     },
     advanceTransition(): GameFlowEffect[] {
       switch (state.kind) {
         case "boot":
         case "playing":
           return [];
+        case "title": {
+          const initialStage = state.initialStage;
+          state = { kind: "levelIntro", stage: initialStage };
+          return [
+            { type: "hideTransition" },
+            { type: "loadStage", stage: initialStage },
+            { type: "showLevelIntro", levelIndex: initialStage.levelIndex },
+          ];
+        }
         case "levelIntro": {
           const nextState = { kind: "playing", stage: state.stage } as const;
           state = nextState;

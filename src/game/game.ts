@@ -15,7 +15,11 @@ import {
   type GameFlowEffect,
 } from "./runtime/state-flow";
 import { createStageRuntime } from "./runtime/stage-runtime";
-import { createHud, createTransitionOverlay } from "./runtime/ui";
+import {
+  createHud,
+  createTitleScreen,
+  createTransitionOverlay,
+} from "./runtime/ui";
 
 export async function startGame(): Promise<void> {
   const app = new Application();
@@ -30,6 +34,7 @@ export async function startGame(): Promise<void> {
   const progression = createProgressionController(LEVELS);
 
   const hud = createHud(app);
+  const titleScreen = createTitleScreen(app, assets.titleTexture);
   const transition = createTransitionOverlay(
     app,
     assets.playerTexture,
@@ -61,6 +66,7 @@ export async function startGame(): Promise<void> {
 
   function updateViewport(): void {
     stageRuntime.updateViewport(app.screen.width, app.screen.height);
+    titleScreen.layout();
     transition.layout();
   }
 
@@ -84,7 +90,12 @@ export async function startGame(): Promise<void> {
     effects.forEach((effect) => {
       switch (effect.type) {
         case "hideTransition":
+          titleScreen.hide();
           transition.hide();
+          break;
+        case "showTitleScreen":
+          transition.hide();
+          titleScreen.show();
           break;
         case "loadStage":
           loadStage(effect.stage.levelIndex, effect.stage.stageIndex);

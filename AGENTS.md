@@ -122,11 +122,13 @@ This file describes the current state of the game implementation and the assumpt
 - If the current stage is the last stage of the current level, goal completion advances to the first stage of the next level.
 - Progression is persisted in browser `localStorage` as the furthest reached stage.
 - Reloading the game resumes from the saved stage instead of always restarting at level 1 stage 1.
+- On boot, the game shows a dedicated title screen using `public/assets/title.png` and waits for `Space`.
 - Before a new level starts, the game shows a full-screen intro with the level number and level name, and waits for `Space`.
 - After the last stage of a level, the game shows a `Level geschafft!` screen before advancing, and waits for `Space`.
-- Both transition screens use an overlay with a large dog image and a speech bubble line, driven from `src/game/runtime/ui.ts`.
+- The title screen and the level transition screens are driven from `src/game/runtime/ui.ts`.
 - Runtime progression is explicit:
   - `boot`
+  - `title`
   - `levelIntro`
   - `playing`
   - `levelComplete`

@@ -5,6 +5,7 @@ import { LEVELS } from "../levels";
 
 export interface GameAssets {
   playerTexture: Texture;
+  titleTexture: Texture;
   speechBubbleTexture: Texture;
   goalClosedTexture: Texture;
   goalOpenTexture: Texture;
@@ -15,6 +16,7 @@ export interface GameAssets {
 
 export async function loadGameAssets(): Promise<GameAssets> {
   const playerTexture = await Assets.load("/assets/image_comic.png");
+  const titleTexture = await Assets.load("/assets/title.png");
   const speechBubbleTexture = await Assets.load(
     "/assets/chat-speech-bubble.svg",
   );
@@ -80,6 +82,7 @@ export async function loadGameAssets(): Promise<GameAssets> {
 
   return {
     playerTexture,
+    titleTexture,
     speechBubbleTexture,
     goalClosedTexture,
     goalOpenTexture,

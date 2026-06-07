@@ -23,6 +23,12 @@ export interface TransitionController {
   layout(): void;
 }
 
+export interface TitleScreenController {
+  show(): void;
+  hide(): void;
+  layout(): void;
+}
+
 export function createHud(app: Application): HudController {
   const label = new Text({
     text: "",
@@ -153,6 +159,63 @@ export function createTransitionOverlay(
       title.text = nextTitle;
       subtitle.text = nextSubtitle;
       speech.text = nextSpeech;
+      overlay.visible = true;
+      layout();
+    },
+    hide(): void {
+      overlay.visible = false;
+    },
+    layout,
+  };
+}
+
+export function createTitleScreen(
+  app: Application,
+  titleTexture: Sprite["texture"],
+): TitleScreenController {
+  const overlay = new Container();
+  const backdrop = new Graphics();
+  const titleImage = new Sprite(titleTexture);
+  const prompt = new Text({
+    text: "Press Space",
+    style: {
+      fill: 0xffffff,
+      fontSize: 24,
+      fontWeight: "800",
+      stroke: { color: 0x1f2a44, width: 4 },
+    },
+  });
+
+  titleImage.anchor.set(0.5);
+  prompt.anchor.set(0.5);
+
+  overlay.visible = false;
+  overlay.addChild(backdrop);
+  overlay.addChild(titleImage);
+  overlay.addChild(prompt);
+  app.stage.addChild(overlay);
+
+  function layout(): void {
+    backdrop
+      .clear()
+      .rect(0, 0, app.screen.width, app.screen.height)
+      .fill({ color: 0x102030, alpha: 1 });
+
+    const maxWidth = app.screen.width * 0.9;
+    const maxHeight = app.screen.height * 0.78;
+    const scale = Math.min(
+      maxWidth / titleImage.texture.width,
+      maxHeight / titleImage.texture.height,
+      1,
+    );
+
+    titleImage.scale.set(scale);
+    titleImage.position.set(app.screen.width / 2, app.screen.height * 0.45);
+    prompt.position.set(app.screen.width / 2, app.screen.height - 72);
+  }
+
+  return {
+    show(): void {
       overlay.visible = true;
       layout();
     },
