@@ -217,6 +217,7 @@ export async function startGame(): Promise<void> {
         needsHudUpdate = true;
       }
       stageRuntime.updateCarriedCollectiblePosition(player.sprite);
+      stageRuntime.syncActorLayers(player.sprite);
       stageRuntime.blockClosedGoal(player.player);
 
       if (needsHudUpdate) {

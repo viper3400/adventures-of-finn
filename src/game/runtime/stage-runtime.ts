@@ -50,6 +50,7 @@ export interface StageRuntime {
   loadStage(levelIndex: number, stageIndex: number): void;
   updateViewport(screenWidth: number, screenHeight: number): void;
   toggleDebug(): void;
+  syncActorLayers(playerSprite: Sprite): void;
   getPlatforms(): Platform[];
   getSpawnPoint(): SpawnPoint;
   getCurrentLevel(): LevelDefinition;
@@ -552,6 +553,15 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       debugVisible = !debugVisible;
       debugLayer.visible = debugVisible;
     },
+    syncActorLayers(playerSprite: Sprite): void {
+      const debugIndex = gameWorld.getChildIndex(debugLayer);
+      const playerIndex = Math.max(0, debugIndex - 1);
+      gameWorld.setChildIndex(playerSprite, playerIndex);
+
+      if (carriedCollectibleSprite?.visible) {
+        gameWorld.setChildIndex(carriedCollectibleSprite, debugIndex);
+      }
+    },
     getPlatforms(): Platform[] {
       return platforms;
     },
@@ -734,43 +744,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       );
     },
     blockClosedGoal(player: Player): void {
-      if (this.isGoalOpen() || !currentGoal) {
-        return;
-      }
-
-      const playerHalfWidth = PLAYER_WIDTH / 2;
-      const playerHalfHeight = PLAYER_HEIGHT / 2;
-      const playerLeft = player.sprite.x - playerHalfWidth;
-      const playerRight = player.sprite.x + playerHalfWidth;
-      const playerTop = player.sprite.y - playerHalfHeight;
-      const playerBottom = player.sprite.y + playerHalfHeight;
-
-      const overlapsGoal =
-        playerRight > currentGoal.x &&
-        playerLeft < currentGoal.x + currentGoal.width &&
-        playerBottom > currentGoal.y &&
-        playerTop < currentGoal.y + currentGoal.height;
-
-      if (!overlapsGoal) {
-        return;
-      }
-
-      if (
-        player.velocityX >= 0 &&
-        player.sprite.x < currentGoal.x + currentGoal.width / 2
-      ) {
-        player.sprite.x = currentGoal.x - playerHalfWidth;
-        player.edgeBounceOffsetX = -6;
-        return;
-      }
-
-      if (
-        player.velocityX <= 0 &&
-        player.sprite.x > currentGoal.x + currentGoal.width / 2
-      ) {
-        player.sprite.x = currentGoal.x + currentGoal.width + playerHalfWidth;
-        player.edgeBounceOffsetX = 6;
-      }
+      void player;
     },
   };
 }

@@ -140,7 +140,7 @@ This file describes the current state of the game implementation and the assumpt
 
 - A goal area is represented as a rectangular zone in level data.
 - The goal starts closed.
-- While closed, it blocks the dog from passing through it.
+- While closed, it stays visually closed but does not physically block the dog.
 - The goal opens only after all 5 treats in the current level are collected.
 - When the player's paw zone intersects an open goal, the game advances to the next level.
 - The goal is drawn as:
