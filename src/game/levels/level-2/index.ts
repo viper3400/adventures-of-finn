@@ -17,11 +17,11 @@ const level2: LevelDefinition = {
     speech: "Alles geliefert. Das war anstrengend, aber sehr professionell.",
   },
   timing: {
-    failSeconds: 60,
-    oneStarSeconds: 60,
-    twoStarSeconds: 50,
-    threeStarSeconds: 40,
-    hurrySeconds: 15,
+    failSeconds: 120,
+    oneStarSeconds: 120,
+    twoStarSeconds: 100,
+    threeStarSeconds: 80,
+    hurrySeconds: 20,
   },
   presentation: {
     themeKey: "retroIndoor",
