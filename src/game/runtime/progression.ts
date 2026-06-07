@@ -6,8 +6,10 @@ export interface StageRef {
 }
 
 export interface ProgressionController {
+  hasStoredProgression(): boolean;
   getResumeStage(): StageRef;
   recordReachedStage(stage: StageRef): void;
+  resetProgression(): void;
 }
 
 interface PersistedProgression {
@@ -77,17 +79,34 @@ function writeStoredProgression(stage: StageRef): void {
   }
 }
 
+function clearStoredProgression(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Ignore storage failures so gameplay still works in restricted contexts.
+  }
+}
+
 export function createProgressionController(
   levels: LevelDefinition[],
 ): ProgressionController {
   const defaultStage = { levelIndex: 0, stageIndex: 0 };
-  let bestStage = readStoredProgression(levels) ?? defaultStage;
+  const storedStage = readStoredProgression(levels);
+  let bestStage = storedStage ?? defaultStage;
   let bestStageOrderIndex =
     getStageOrderIndex(levels, bestStage) ??
     getStageOrderIndex(levels, defaultStage) ??
     0;
+  let hasStoredProgress = storedStage !== null;
 
   return {
+    hasStoredProgression(): boolean {
+      return hasStoredProgress;
+    },
     getResumeStage(): StageRef {
       return bestStage;
     },
@@ -99,7 +118,14 @@ export function createProgressionController(
 
       bestStage = stage;
       bestStageOrderIndex = stageOrderIndex;
+      hasStoredProgress = true;
       writeStoredProgression(stage);
+    },
+    resetProgression(): void {
+      bestStage = defaultStage;
+      bestStageOrderIndex = getStageOrderIndex(levels, defaultStage) ?? 0;
+      hasStoredProgress = false;
+      clearStoredProgression();
     },
   };
 }

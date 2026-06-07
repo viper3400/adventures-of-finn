@@ -123,12 +123,14 @@ This file describes the current state of the game implementation and the assumpt
 - Progression is persisted in browser `localStorage` as the furthest reached stage.
 - Reloading the game resumes from the saved stage instead of always restarting at level 1 stage 1.
 - On boot, the game shows a dedicated title screen using `public/assets/title.png` and waits for `Space`.
+- After the title screen, the game shows a startup menu that lets the player begin a new run from level 1 or continue from saved progress.
 - Before a new level starts, the game shows a full-screen intro with the level number and level name, and waits for `Space`.
 - After the last stage of a level, the game shows a `Level geschafft!` screen before advancing, and waits for `Space`.
 - The title screen and the level transition screens are driven from `src/game/runtime/ui.ts`.
 - Runtime progression is explicit:
   - `boot`
   - `title`
+  - `menu`
   - `levelIntro`
   - `playing`
   - `levelComplete`

@@ -17,6 +17,7 @@ import {
 import { createStageRuntime } from "./runtime/stage-runtime";
 import {
   createHud,
+  createStartupMenu,
   createTitleScreen,
   createTransitionOverlay,
 } from "./runtime/ui";
@@ -35,6 +36,7 @@ export async function startGame(): Promise<void> {
 
   const hud = createHud(app);
   const titleScreen = createTitleScreen(app, assets.titleTexture);
+  const startupMenu = createStartupMenu(app, assets.titleTexture);
   const transition = createTransitionOverlay(
     app,
     assets.playerTexture,
@@ -67,6 +69,7 @@ export async function startGame(): Promise<void> {
   function updateViewport(): void {
     stageRuntime.updateViewport(app.screen.width, app.screen.height);
     titleScreen.layout();
+    startupMenu.layout();
     transition.layout();
   }
 
@@ -91,11 +94,18 @@ export async function startGame(): Promise<void> {
       switch (effect.type) {
         case "hideTransition":
           titleScreen.hide();
+          startupMenu.hide();
           transition.hide();
           break;
         case "showTitleScreen":
+          startupMenu.hide();
           transition.hide();
           titleScreen.show();
+          break;
+        case "showStartupMenu":
+          titleScreen.hide();
+          transition.hide();
+          showStartupMenu();
           break;
         case "loadStage":
           loadStage(effect.stage.levelIndex, effect.stage.stageIndex);
@@ -108,6 +118,16 @@ export async function startGame(): Promise<void> {
           break;
       }
     });
+  }
+
+  function showStartupMenu(): void {
+    const resumeStage = progression.getResumeStage();
+    const levelNumber = resumeStage.levelIndex + 1;
+    const stageNumber = resumeStage.stageIndex + 1;
+    startupMenu.show(
+      progression.hasStoredProgression(),
+      `Weiter bei Level ${levelNumber}, Stage ${stageNumber}`,
+    );
   }
 
   function showLevelIntro(levelIndex: number): void {
@@ -137,7 +157,12 @@ export async function startGame(): Promise<void> {
   updateViewport();
   app.renderer.on("resize", updateViewport);
 
-  applyGameFlowEffects(gameFlow.start(progression.getResumeStage()));
+  applyGameFlowEffects(
+    gameFlow.start(
+      progression.getResumeStage(),
+      progression.hasStoredProgression(),
+    ),
+  );
 
   app.ticker.add(
     () => {
@@ -151,6 +176,27 @@ export async function startGame(): Promise<void> {
       }
 
       if (!gameFlow.isPlaying()) {
+        if (gameFlow.getState().kind === "menu") {
+          if (input.consumeMenuUp()) {
+            startupMenu.selectPrevious();
+          }
+
+          if (input.consumeMenuDown()) {
+            startupMenu.selectNext();
+          }
+
+          if (input.consumeTransitionClose()) {
+            if (startupMenu.getSelectedAction() === "new") {
+              progression.resetProgression();
+              applyGameFlowEffects(gameFlow.startNewGame());
+            } else {
+              applyGameFlowEffects(gameFlow.continueGame());
+            }
+            input.markJumpUsed();
+          }
+          return;
+        }
+
         if (input.consumeTransitionClose()) {
           applyGameFlowEffects(gameFlow.advanceTransition());
           input.markJumpUsed();

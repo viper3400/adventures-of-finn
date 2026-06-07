@@ -7,7 +7,8 @@ interface StageRef {
 
 export type GameFlowState =
   | { kind: "boot" }
-  | { kind: "title"; initialStage: StageRef }
+  | { kind: "title"; resumeStage: StageRef; hasStoredProgress: boolean }
+  | { kind: "menu"; resumeStage: StageRef; hasStoredProgress: boolean }
   | { kind: "levelIntro"; stage: StageRef }
   | { kind: "playing"; stage: StageRef }
   | { kind: "levelComplete"; completedLevelIndex: number; nextStage: StageRef };
@@ -15,6 +16,7 @@ export type GameFlowState =
 export type GameFlowEffect =
   | { type: "hideTransition" }
   | { type: "showTitleScreen" }
+  | { type: "showStartupMenu" }
   | { type: "loadStage"; stage: StageRef }
   | { type: "showLevelIntro"; levelIndex: number }
   | { type: "showLevelComplete"; levelIndex: number };
@@ -22,8 +24,10 @@ export type GameFlowEffect =
 export interface GameFlowController {
   getState(): GameFlowState;
   isPlaying(): boolean;
-  start(initialStage?: StageRef): GameFlowEffect[];
+  start(initialStage?: StageRef, hasStoredProgress?: boolean): GameFlowEffect[];
   advanceTransition(): GameFlowEffect[];
+  startNewGame(): GameFlowEffect[];
+  continueGame(): GameFlowEffect[];
   advanceFromGoal(): GameFlowEffect[];
   skipForward(): GameFlowEffect[];
 }
@@ -55,7 +59,8 @@ export function createGameFlowController(
       case "boot":
         return { levelIndex: 0, stageIndex: 0 };
       case "title":
-        return state.initialStage;
+      case "menu":
+        return state.resumeStage;
       case "levelIntro":
       case "playing":
         return state.stage;
@@ -71,24 +76,27 @@ export function createGameFlowController(
     isPlaying(): boolean {
       return state.kind === "playing";
     },
-    start(initialStage = { levelIndex: 0, stageIndex: 0 }): GameFlowEffect[] {
-      state = { kind: "title", initialStage };
+    start(
+      initialStage = { levelIndex: 0, stageIndex: 0 },
+      hasStoredProgress = false,
+    ): GameFlowEffect[] {
+      state = { kind: "title", resumeStage: initialStage, hasStoredProgress };
 
       return [{ type: "showTitleScreen" }];
     },
     advanceTransition(): GameFlowEffect[] {
       switch (state.kind) {
         case "boot":
+        case "menu":
         case "playing":
           return [];
         case "title": {
-          const initialStage = state.initialStage;
-          state = { kind: "levelIntro", stage: initialStage };
-          return [
-            { type: "hideTransition" },
-            { type: "loadStage", stage: initialStage },
-            { type: "showLevelIntro", levelIndex: initialStage.levelIndex },
-          ];
+          state = {
+            kind: "menu",
+            resumeStage: state.resumeStage,
+            hasStoredProgress: state.hasStoredProgress,
+          };
+          return [{ type: "showStartupMenu" }];
         }
         case "levelIntro": {
           const nextState = { kind: "playing", stage: state.stage } as const;
@@ -105,6 +113,36 @@ export function createGameFlowController(
           ];
         }
       }
+    },
+    startNewGame(): GameFlowEffect[] {
+      if (state.kind !== "menu") {
+        return [];
+      }
+
+      const firstStage = { levelIndex: 0, stageIndex: 0 };
+      state = { kind: "levelIntro", stage: firstStage };
+
+      return [
+        { type: "hideTransition" },
+        { type: "loadStage", stage: firstStage },
+        { type: "showLevelIntro", levelIndex: firstStage.levelIndex },
+      ];
+    },
+    continueGame(): GameFlowEffect[] {
+      if (state.kind !== "menu") {
+        return [];
+      }
+
+      const nextStage = state.hasStoredProgress
+        ? state.resumeStage
+        : { levelIndex: 0, stageIndex: 0 };
+      state = { kind: "levelIntro", stage: nextStage };
+
+      return [
+        { type: "hideTransition" },
+        { type: "loadStage", stage: nextStage },
+        { type: "showLevelIntro", levelIndex: nextStage.levelIndex },
+      ];
     },
     advanceFromGoal(): GameFlowEffect[] {
       if (state.kind !== "playing") {

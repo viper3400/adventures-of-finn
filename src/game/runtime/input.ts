@@ -4,6 +4,8 @@ export interface InputController {
   isJumpPressed(): boolean;
   canStartJump(): boolean;
   markJumpUsed(): void;
+  consumeMenuUp(): boolean;
+  consumeMenuDown(): boolean;
   consumeDebugToggle(): boolean;
   consumeStageSkip(): boolean;
   consumeTransitionClose(): boolean;
@@ -13,6 +15,8 @@ export interface InputController {
 export function createInputController(): InputController {
   const keys: Record<string, boolean> = {};
   let jumpReady = true;
+  let menuUpRequested = false;
+  let menuDownRequested = false;
   let debugToggleRequested = false;
   let stageSkipRequested = false;
   let transitionCloseRequested = false;
@@ -27,6 +31,14 @@ export function createInputController(): InputController {
 
     if (key === "l" && !event.repeat) {
       debugToggleRequested = true;
+    }
+
+    if (key === "arrowup" && !event.repeat) {
+      menuUpRequested = true;
+    }
+
+    if (key === "arrowdown" && !event.repeat) {
+      menuDownRequested = true;
     }
 
     if (key === "s" && !event.repeat) {
@@ -57,6 +69,16 @@ export function createInputController(): InputController {
     canStartJump: () => jumpReady && isJumpKeyHeld(),
     markJumpUsed(): void {
       jumpReady = false;
+    },
+    consumeMenuUp(): boolean {
+      const requested = menuUpRequested;
+      menuUpRequested = false;
+      return requested;
+    },
+    consumeMenuDown(): boolean {
+      const requested = menuDownRequested;
+      menuDownRequested = false;
+      return requested;
     },
     consumeDebugToggle(): boolean {
       const requested = debugToggleRequested;
