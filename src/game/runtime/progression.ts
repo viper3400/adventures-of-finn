@@ -108,7 +108,10 @@ export function createProgressionController(
       return hasStoredProgress;
     },
     getResumeStage(): StageRef {
-      return bestStage;
+      return {
+        levelIndex: bestStage.levelIndex,
+        stageIndex: 0,
+      };
     },
     recordReachedStage(stage: StageRef): void {
       const stageOrderIndex = getStageOrderIndex(levels, stage);

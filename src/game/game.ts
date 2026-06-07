@@ -154,10 +154,9 @@ export async function startGame(): Promise<void> {
   function showStartupMenu(): void {
     const resumeStage = progression.getResumeStage();
     const levelNumber = resumeStage.levelIndex + 1;
-    const stageNumber = resumeStage.stageIndex + 1;
     startupMenu.show(
       progression.hasStoredProgression(),
-      `Weiter bei Level ${levelNumber}, Stage ${stageNumber}`,
+      `Weiter bei Level ${levelNumber}`,
     );
   }
 
