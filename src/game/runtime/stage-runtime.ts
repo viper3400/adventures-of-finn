@@ -80,9 +80,78 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   let groundLeft = 0;
   let groundWidth = WORLD_WIDTH;
 
-  const groundGfx = new Graphics()
-    .rect(groundLeft, groundY, groundWidth, GROUND_HEIGHT)
-    .fill({ color: 0x8b4513 });
+  function drawPlatformSurface(
+    gfx: Graphics,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    variant: "ground" | "platform",
+  ): void {
+    const bodyColor = variant === "ground" ? 0x7f4a1f : 0x5c5378;
+    const topColor = variant === "ground" ? 0xd3a15c : 0xcab8ff;
+    const shadowColor = variant === "ground" ? 0x4d2510 : 0x2a2341;
+    const accentColor = variant === "ground" ? 0xb86a2c : 0x8f84bc;
+    const inset = Math.min(6, height / 4);
+    const stripeStep = 24;
+    const blockStep = 32;
+
+    gfx.clear();
+    gfx.rect(x, y, width, height).fill({ color: shadowColor });
+    gfx
+      .rect(x + 4, y + 4, Math.max(0, width - 8), Math.max(0, height - 8))
+      .fill({ color: bodyColor });
+    gfx
+      .rect(x + 4, y + 4, Math.max(0, width - 8), Math.max(8, inset + 6))
+      .fill({ color: topColor });
+
+    for (
+      let stripeX = x + 10;
+      stripeX < x + width - 10;
+      stripeX += stripeStep
+    ) {
+      gfx
+        .rect(stripeX, y + inset + 10, 8, Math.max(6, height - inset - 18))
+        .fill({ color: accentColor, alpha: 0.4 });
+    }
+
+    for (let blockX = x + 8; blockX < x + width - 16; blockX += blockStep) {
+      gfx
+        .rect(blockX, y + height - 12, 18, 4)
+        .fill({ color: 0xffffff, alpha: 0.12 });
+    }
+
+    if (variant === "ground") {
+      for (let pebbleX = x + 14; pebbleX < x + width - 12; pebbleX += 42) {
+        gfx
+          .rect(pebbleX, y + height - 22, 10, 6)
+          .fill({ color: 0x3c1b0c, alpha: 0.42 });
+      }
+    } else {
+      for (let seamX = x + 14; seamX < x + width - 14; seamX += 30) {
+        gfx
+          .rect(seamX, y + 10, 3, Math.max(8, height - 20))
+          .fill({ color: 0x1d172d, alpha: 0.55 });
+        gfx
+          .rect(seamX + 3, y + 10, 2, Math.max(8, height - 20))
+          .fill({ color: 0xe8deff, alpha: 0.16 });
+      }
+
+      gfx
+        .rect(x + 8, y + height - 16, Math.max(0, width - 16), 3)
+        .fill({ color: 0x201b31, alpha: 0.45 });
+    }
+  }
+
+  const groundGfx = new Graphics();
+  drawPlatformSurface(
+    groundGfx,
+    groundLeft,
+    groundY,
+    groundWidth,
+    GROUND_HEIGHT,
+    "ground",
+  );
   gameWorld.addChild(groundGfx);
 
   const platforms: Platform[] = [
@@ -379,9 +448,15 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       progressCount = 0;
 
       stage.platforms.forEach((config) => {
-        const gfx = new Graphics()
-          .rect(config.x, config.y, config.w, config.h)
-          .fill({ color: 0x228b22 });
+        const gfx = new Graphics();
+        drawPlatformSurface(
+          gfx,
+          config.x,
+          config.y,
+          config.w,
+          config.h,
+          "platform",
+        );
         levelPlatformGraphics.push(gfx);
         gameWorld.addChildAt(gfx, 0);
         platforms.push({
@@ -457,10 +532,14 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       groundLeft = -sidePadding;
       groundWidth = WORLD_WIDTH + sidePadding * 2;
 
-      groundGfx
-        .clear()
-        .rect(groundLeft, groundY, groundWidth, GROUND_HEIGHT)
-        .fill({ color: 0x8b4513 });
+      drawPlatformSurface(
+        groundGfx,
+        groundLeft,
+        groundY,
+        groundWidth,
+        GROUND_HEIGHT,
+        "ground",
+      );
 
       platforms[0].x = groundLeft;
       platforms[0].width = groundWidth;
