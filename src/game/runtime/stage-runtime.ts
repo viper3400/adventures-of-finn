@@ -71,8 +71,10 @@ export interface StageRuntime {
 
 export function createStageRuntime(assets: GameAssets): StageRuntime {
   const gameWorld = new Container();
+  const backgroundGfx = new Graphics();
   const debugLayer = new Container();
   gameWorld.addChild(debugLayer);
+  gameWorld.addChildAt(backgroundGfx, 0);
 
   let debugVisible = false;
   debugLayer.visible = debugVisible;
@@ -80,6 +82,75 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   const groundY = WORLD_HEIGHT - GROUND_HEIGHT;
   let groundLeft = 0;
   let groundWidth = WORLD_WIDTH;
+
+  function drawRetroBackground(gfx: Graphics): void {
+    const visibleLeft = groundLeft;
+    const visibleWidth = groundWidth;
+    const farHillY = WORLD_HEIGHT - GROUND_HEIGHT - 150;
+    const midHillY = WORLD_HEIGHT - GROUND_HEIGHT - 108;
+    const nearHillY = WORLD_HEIGHT - GROUND_HEIGHT - 58;
+    const cloudLayout = [
+      { x: visibleLeft + visibleWidth * 0.14, y: 118, scale: 1 },
+      { x: visibleLeft + visibleWidth * 0.38, y: 86, scale: 0.82 },
+      { x: visibleLeft + visibleWidth * 0.66, y: 132, scale: 1.08 },
+      { x: visibleLeft + visibleWidth * 0.88, y: 96, scale: 0.76 },
+    ];
+
+    gfx.clear();
+    gfx.rect(visibleLeft, 0, visibleWidth, WORLD_HEIGHT).fill({
+      color: 0x83d6ff,
+    });
+    gfx
+      .rect(visibleLeft, WORLD_HEIGHT * 0.5, visibleWidth, WORLD_HEIGHT * 0.5)
+      .fill({ color: 0xd9f4ff });
+
+    for (let stripeY = 68; stripeY < 290; stripeY += 28) {
+      gfx
+        .rect(visibleLeft, stripeY, visibleWidth, 6)
+        .fill({ color: 0xffffff, alpha: 0.08 });
+    }
+
+    gfx
+      .ellipse(visibleLeft + visibleWidth * 0.16, farHillY, 250, 88)
+      .fill({ color: 0x78ca84 })
+      .ellipse(visibleLeft + visibleWidth * 0.45, farHillY + 10, 320, 102)
+      .fill({ color: 0x78ca84 })
+      .ellipse(visibleLeft + visibleWidth * 0.8, farHillY + 2, 290, 94)
+      .fill({ color: 0x78ca84 });
+
+    gfx
+      .ellipse(visibleLeft + visibleWidth * 0.08, midHillY + 10, 240, 88)
+      .fill({ color: 0x57a96d })
+      .ellipse(visibleLeft + visibleWidth * 0.34, midHillY - 4, 286, 110)
+      .fill({ color: 0x57a96d })
+      .ellipse(visibleLeft + visibleWidth * 0.62, midHillY + 6, 256, 96)
+      .fill({ color: 0x57a96d })
+      .ellipse(visibleLeft + visibleWidth * 0.9, midHillY - 2, 220, 82)
+      .fill({ color: 0x57a96d });
+
+    gfx
+      .ellipse(visibleLeft + visibleWidth * 0.22, nearHillY + 8, 250, 84)
+      .fill({ color: 0x326f4a })
+      .ellipse(visibleLeft + visibleWidth * 0.52, nearHillY - 6, 328, 100)
+      .fill({ color: 0x326f4a })
+      .ellipse(visibleLeft + visibleWidth * 0.82, nearHillY + 10, 264, 88)
+      .fill({ color: 0x326f4a });
+
+    cloudLayout.forEach(({ x, y, scale }) => {
+      const p = 18 * scale;
+      gfx
+        .roundRect(x - 3.4 * p, y - 0.4 * p, 6.8 * p, 1.8 * p, 10 * scale)
+        .fill({ color: 0xd2edf8, alpha: 0.92 })
+        .circle(x - 2.1 * p, y + 0.1 * p, 1.15 * p)
+        .fill({ color: 0xfbfffd })
+        .circle(x - 0.55 * p, y - 0.55 * p, 1.4 * p)
+        .fill({ color: 0xfbfffd })
+        .circle(x + 1.2 * p, y - 0.05 * p, 1.12 * p)
+        .fill({ color: 0xfbfffd })
+        .roundRect(x - 3.6 * p, y + 0.15 * p, 7.2 * p, 1.45 * p, 10 * scale)
+        .fill({ color: 0xfbfffd });
+    });
+  }
 
   function drawPlatformSurface(
     gfx: Graphics,
@@ -145,6 +216,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   }
 
   const groundGfx = new Graphics();
+  drawRetroBackground(backgroundGfx);
   drawPlatformSurface(
     groundGfx,
     groundLeft,
@@ -459,7 +531,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
           "platform",
         );
         levelPlatformGraphics.push(gfx);
-        gameWorld.addChildAt(gfx, 0);
+        gameWorld.addChildAt(gfx, 1);
         platforms.push({
           id: config.id,
           x: config.x,
@@ -532,6 +604,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
 
       groundLeft = -sidePadding;
       groundWidth = WORLD_WIDTH + sidePadding * 2;
+      drawRetroBackground(backgroundGfx);
 
       drawPlatformSurface(
         groundGfx,
