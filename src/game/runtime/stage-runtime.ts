@@ -628,6 +628,10 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         }
 
         sprite.visible = false;
+        spawnDeliverySuccessEffect(
+          collectible.x,
+          collectible.y - collectible.height * 0.2,
+        );
         progressCount += 1;
         redrawGoal();
         didChange = true;
