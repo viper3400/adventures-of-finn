@@ -59,8 +59,27 @@ export function createInputController(): InputController {
     }
   }
 
+  function resetInputState(): void {
+    Object.keys(keys).forEach((key) => {
+      keys[key] = false;
+    });
+    jumpReady = true;
+  }
+
+  function handleWindowBlur(): void {
+    resetInputState();
+  }
+
+  function handleVisibilityChange(): void {
+    if (document.visibilityState !== "visible") {
+      resetInputState();
+    }
+  }
+
   window.addEventListener("keydown", handleKeyDown);
   window.addEventListener("keyup", handleKeyUp);
+  window.addEventListener("blur", handleWindowBlur);
+  document.addEventListener("visibilitychange", handleVisibilityChange);
 
   return {
     isLeftPressed: () => Boolean(keys["arrowleft"] || keys["a"]),
@@ -98,6 +117,8 @@ export function createInputController(): InputController {
     destroy(): void {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleWindowBlur);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     },
   };
 }
