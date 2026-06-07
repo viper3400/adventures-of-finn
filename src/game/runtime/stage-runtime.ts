@@ -509,7 +509,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     debugLayer.addChild(label);
   }
 
-  function rebuildDebugOverlay(stage: StageDefinition): void {
+  function rebuildDebugOverlay(): void {
     clearDebugOverlay();
 
     createDebugLabel(
@@ -518,9 +518,9 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       groundY - 28,
     );
 
-    stage.platforms.forEach((platform) => {
+    platforms.slice(1).forEach((platform) => {
       createDebugLabel(
-        `P${platform.id} x:${platform.x} y:${platform.y}`,
+        `P${platform.id} x:${Math.round(platform.baseX ?? platform.x)} y:${Math.round(platform.baseY ?? platform.y)}`,
         platform.x + 8,
         platform.y - 28,
       );
@@ -541,7 +541,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       return;
     }
 
-    rebuildDebugOverlay(getCurrentStage());
+    rebuildDebugOverlay();
   }
 
   function clearDeliveryEffects(): void {
@@ -764,7 +764,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       void currentCheckpoints;
       void currentHazards;
 
-      rebuildDebugOverlay(stage);
+      rebuildDebugOverlay();
       redrawGoal();
     },
     updateViewport(screenWidth: number, screenHeight: number): void {
@@ -798,13 +798,13 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       platforms[0].width = groundWidth;
 
       if (currentGoal) {
-        rebuildDebugOverlay(getCurrentStage());
+        rebuildDebugOverlay();
       }
     },
     toggleDebug(): void {
       debugVisible = !debugVisible;
       if (debugVisible) {
-        rebuildDebugOverlay(getCurrentStage());
+        rebuildDebugOverlay();
       }
       debugLayer.visible = debugVisible;
     },
@@ -1043,7 +1043,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
 
       refreshDynamicAnchors();
       if (debugVisible) {
-        rebuildDebugOverlay(getCurrentStage());
+        rebuildDebugOverlay();
       }
     },
     updateDeliveryEffects(deltaMs: number): void {
