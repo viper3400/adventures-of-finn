@@ -54,6 +54,7 @@ export interface StageRuntime {
   loadStage(levelIndex: number, stageIndex: number): void;
   updateViewport(screenWidth: number, screenHeight: number): void;
   toggleDebug(): void;
+  isDebugVisible(): boolean;
   syncActorLayers(playerSprite: Container): void;
   getPlatforms(): Platform[];
   getSpawnPoint(): SpawnPoint;
@@ -525,8 +526,22 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       );
     });
 
+    createDebugLabel(
+      `Goal ${isGoalCurrentlyOpen() ? "Open" : "Closed"}  Carrying ${carriedCollectibleIndex === null ? "No" : "Yes"}`,
+      groundLeft + 12,
+      groundY + 16,
+    );
+
     debugLayer.visible = debugVisible;
     gameWorld.setChildIndex(debugLayer, gameWorld.children.length - 1);
+  }
+
+  function refreshDebugOverlay(): void {
+    if (!debugVisible) {
+      return;
+    }
+
+    rebuildDebugOverlay(getCurrentStage());
   }
 
   function clearDeliveryEffects(): void {
@@ -788,7 +803,13 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     },
     toggleDebug(): void {
       debugVisible = !debugVisible;
+      if (debugVisible) {
+        rebuildDebugOverlay(getCurrentStage());
+      }
       debugLayer.visible = debugVisible;
+    },
+    isDebugVisible(): boolean {
+      return debugVisible;
     },
     syncActorLayers(playerSprite: Container): void {
       const debugIndex = gameWorld.getChildIndex(debugLayer);
@@ -860,6 +881,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
           if (carriedCollectibleSprite) {
             carriedCollectibleSprite.visible = true;
           }
+          refreshDebugOverlay();
           didChange = true;
           return;
         }
@@ -871,6 +893,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         );
         progressCount += 1;
         redrawGoal();
+        refreshDebugOverlay();
         didChange = true;
       });
 
@@ -911,6 +934,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       );
       progressCount += 1;
       redrawGoal();
+      refreshDebugOverlay();
       return true;
     },
     updateCarriedCollectiblePosition(playerSprite: Container): void {
@@ -937,6 +961,8 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       if (carriedCollectibleSprite) {
         carriedCollectibleSprite.visible = false;
       }
+
+      refreshDebugOverlay();
 
       return true;
     },

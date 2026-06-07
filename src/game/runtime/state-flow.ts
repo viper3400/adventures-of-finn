@@ -11,7 +11,14 @@ export type GameFlowState =
   | { kind: "menu"; resumeStage: StageRef; hasStoredProgress: boolean }
   | { kind: "levelIntro"; stage: StageRef }
   | { kind: "playing"; stage: StageRef }
-  | { kind: "levelComplete"; completedLevelIndex: number; nextStage: StageRef };
+  | { kind: "levelComplete"; completedLevelIndex: number; nextStage: StageRef }
+  | {
+      kind: "levelFailed";
+      failedLevelIndex: number;
+      restartStage: StageRef;
+      gameOver: boolean;
+      livesRemaining: number;
+    };
 
 export type GameFlowEffect =
   | { type: "hideTransition" }
@@ -19,7 +26,13 @@ export type GameFlowEffect =
   | { type: "showStartupMenu" }
   | { type: "loadStage"; stage: StageRef }
   | { type: "showLevelIntro"; levelIndex: number }
-  | { type: "showLevelComplete"; levelIndex: number };
+  | { type: "showLevelComplete"; levelIndex: number }
+  | {
+      type: "showLevelFailure";
+      levelIndex: number;
+      gameOver: boolean;
+      livesRemaining: number;
+    };
 
 export interface GameFlowController {
   getState(): GameFlowState;
@@ -29,6 +42,11 @@ export interface GameFlowController {
   startNewGame(): GameFlowEffect[];
   continueGame(): GameFlowEffect[];
   advanceFromGoal(): GameFlowEffect[];
+  failLevel(
+    restartStage: StageRef,
+    gameOver: boolean,
+    livesRemaining: number,
+  ): GameFlowEffect[];
   skipForward(): GameFlowEffect[];
 }
 
@@ -66,6 +84,8 @@ export function createGameFlowController(
         return state.stage;
       case "levelComplete":
         return state.nextStage;
+      case "levelFailed":
+        return state.restartStage;
     }
   }
 
@@ -110,6 +130,15 @@ export function createGameFlowController(
             { type: "hideTransition" },
             { type: "loadStage", stage: nextStage },
             { type: "showLevelIntro", levelIndex: nextStage.levelIndex },
+          ];
+        }
+        case "levelFailed": {
+          const restartStage = state.restartStage;
+          state = { kind: "levelIntro", stage: restartStage };
+          return [
+            { type: "hideTransition" },
+            { type: "loadStage", stage: restartStage },
+            { type: "showLevelIntro", levelIndex: restartStage.levelIndex },
           ];
         }
       }
@@ -166,6 +195,33 @@ export function createGameFlowController(
 
       return [
         { type: "showLevelComplete", levelIndex: currentStage.levelIndex },
+      ];
+    },
+    failLevel(
+      restartStage: StageRef,
+      gameOver: boolean,
+      livesRemaining: number,
+    ): GameFlowEffect[] {
+      const failedLevelIndex =
+        state.kind === "playing"
+          ? state.stage.levelIndex
+          : restartStage.levelIndex;
+
+      state = {
+        kind: "levelFailed",
+        failedLevelIndex,
+        restartStage,
+        gameOver,
+        livesRemaining,
+      };
+
+      return [
+        {
+          type: "showLevelFailure",
+          levelIndex: failedLevelIndex,
+          gameOver,
+          livesRemaining,
+        },
       ];
     },
     skipForward(): GameFlowEffect[] {

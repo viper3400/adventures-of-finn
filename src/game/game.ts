@@ -8,6 +8,10 @@ import {
 import { LEVELS } from "./levels";
 import { loadGameAssets } from "./runtime/assets";
 import { createInputController } from "./runtime/input";
+import {
+  createLevelSessionController,
+  type LevelCompletionResult,
+} from "./runtime/level-session";
 import { createPlayer } from "./runtime/player";
 import { createProgressionController } from "./runtime/progression";
 import {
@@ -33,6 +37,7 @@ export async function startGame(): Promise<void> {
   app.stage.addChild(stageRuntime.gameWorld);
   const gameFlow = createGameFlowController(LEVELS);
   const progression = createProgressionController(LEVELS);
+  const levelSession = createLevelSessionController(LEVELS);
 
   const hud = createHud(app);
   const titleScreen = createTitleScreen(app, assets.titleTexture);
@@ -49,6 +54,11 @@ export async function startGame(): Promise<void> {
     spawnPoint.x,
     spawnPoint.y,
   );
+  let lastLevelCompletion: LevelCompletionResult | null = null;
+
+  function formatStars(starsEarned: number): string {
+    return `${"*".repeat(starsEarned)}${"-".repeat(3 - starsEarned)}`;
+  }
 
   function updateHud(): void {
     const level = stageRuntime.getCurrentLevel();
@@ -61,8 +71,9 @@ export async function startGame(): Promise<void> {
       objectiveType: getStageObjectiveType(stage),
       progressCount: stageRuntime.getProgressCount(),
       totalCollectibles: getStageCollectibles(stage).length,
-      hasCarriedCollectible: stageRuntime.hasCarriedCollectible(),
-      goalOpen: stageRuntime.isGoalOpen(),
+      timeRemainingSeconds: levelSession.getTimeRemainingSeconds(),
+      livesRemaining: levelSession.getLivesRemaining(),
+      hurry: levelSession.isHurry(),
     });
   }
 
@@ -83,6 +94,12 @@ export async function startGame(): Promise<void> {
   }
 
   function loadStage(levelIndex: number, stageIndex: number): void {
+    if (
+      levelSession.getCurrentLevelIndex() !== levelIndex ||
+      stageIndex === 0
+    ) {
+      levelSession.beginLevel(levelIndex);
+    }
     stageRuntime.loadStage(levelIndex, stageIndex);
     progression.recordReachedStage({ levelIndex, stageIndex });
     resetPlayerToSpawn();
@@ -116,8 +133,17 @@ export async function startGame(): Promise<void> {
         case "showLevelComplete":
           showLevelComplete(effect.levelIndex);
           break;
+        case "showLevelFailure":
+          showLevelFailure(
+            effect.levelIndex,
+            effect.gameOver,
+            effect.livesRemaining,
+          );
+          break;
       }
     });
+    levelSession.setRunning(gameFlow.isPlaying());
+    updateHud();
   }
 
   function showStartupMenu(): void {
@@ -142,12 +168,31 @@ export async function startGame(): Promise<void> {
 
   function showLevelComplete(levelIndex: number): void {
     const level = LEVELS[levelIndex];
+    const completionHint = lastLevelCompletion
+      ? `Result ${lastLevelCompletion.elapsedSeconds}s  Stars ${formatStars(lastLevelCompletion.starsEarned)}`
+      : "Result unavailable";
     const content = getTransitionContent(
       level.completion,
       "Level geschafft!",
-      `${level.name} abgeschlossen`,
+      `${level.name} abgeschlossen - ${completionHint}`,
     );
     transition.show(content.title, content.subtitle, content.speech);
+  }
+
+  function showLevelFailure(
+    levelIndex: number,
+    gameOver: boolean,
+    livesRemaining: number,
+  ): void {
+    const level = LEVELS[levelIndex];
+    const subtitle = gameOver
+      ? "Alle Leben verloren - zurueck zum Anfang"
+      : `${level.name} neu starten - noch ${livesRemaining} Leben`;
+    const speech = gameOver
+      ? "Die Zeit ist abgelaufen und alle 3 Leben sind weg. Zurueck zu Level 1."
+      : `Die Zeit ist abgelaufen. Ein Leben verloren. Noch ${livesRemaining} Leben uebrig.`;
+
+    transition.show("Zu langsam!", subtitle, speech);
   }
 
   function jumpToNextStageDebug(): void {
@@ -163,6 +208,8 @@ export async function startGame(): Promise<void> {
       progression.hasStoredProgression(),
     ),
   );
+  levelSession.resetRun();
+  updateHud();
 
   app.ticker.add(
     () => {
@@ -188,8 +235,10 @@ export async function startGame(): Promise<void> {
           if (input.consumeTransitionClose()) {
             if (startupMenu.getSelectedAction() === "new") {
               progression.resetProgression();
+              levelSession.resetRun();
               applyGameFlowEffects(gameFlow.startNewGame());
             } else {
+              levelSession.resetRun();
               applyGameFlowEffects(gameFlow.continueGame());
             }
             input.markJumpUsed();
@@ -207,6 +256,24 @@ export async function startGame(): Promise<void> {
       stageRuntime.updateDeliveryEffects(app.ticker.deltaMS);
       stageRuntime.updateMovingPlatforms(app.ticker.deltaMS, player.player);
       player.update(input, stageRuntime.getPlatforms());
+      const timeoutResult = levelSession.update(app.ticker.deltaMS);
+      if (timeoutResult) {
+        lastLevelCompletion = null;
+        if (timeoutResult.gameOver) {
+          progression.resetProgression();
+        }
+        applyGameFlowEffects(
+          gameFlow.failLevel(
+            {
+              levelIndex: timeoutResult.restartLevelIndex,
+              stageIndex: 0,
+            },
+            timeoutResult.gameOver,
+            timeoutResult.livesRemaining,
+          ),
+        );
+        return;
+      }
 
       let needsHudUpdate = false;
       if (stageRuntime.collectItems(player.sprite.x, player.sprite.y)) {
@@ -226,6 +293,16 @@ export async function startGame(): Promise<void> {
       }
 
       if (stageRuntime.checkGoalReached(player.sprite.x, player.sprite.y)) {
+        const isLastStage =
+          stageRuntime.getCurrentStageIndex() ===
+          stageRuntime.getCurrentLevel().stages.length - 1;
+        if (isLastStage) {
+          lastLevelCompletion = levelSession.completeLevel(
+            stageRuntime.getCurrentLevelIndex(),
+          );
+        } else {
+          lastLevelCompletion = null;
+        }
         applyGameFlowEffects(gameFlow.advanceFromGoal());
         return;
       }
@@ -233,6 +310,8 @@ export async function startGame(): Promise<void> {
       if (player.isOutOfBounds()) {
         resetPlayerToSpawn();
       }
+
+      updateHud();
     },
     undefined,
     UPDATE_PRIORITY.HIGH,

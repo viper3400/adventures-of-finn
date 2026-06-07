@@ -9,8 +9,9 @@ export interface HudState {
   objectiveType: StageObjectiveType;
   progressCount: number;
   totalCollectibles: number;
-  hasCarriedCollectible: boolean;
-  goalOpen: boolean;
+  timeRemainingSeconds: number;
+  livesRemaining: number;
+  hurry: boolean;
 }
 
 export interface HudController {
@@ -57,23 +58,28 @@ export function createHud(app: Application): HudController {
 
   return {
     update(state: HudState): void {
-      const goalState = state.goalOpen ? "Open" : "Closed";
+      const timerLabel = `Time ${state.timeRemainingSeconds}s`;
+      const livesLabel = `Lives ${state.livesRemaining}`;
+      const hurryLabel = state.hurry ? " HURRY!" : "";
       const modeStatus =
         state.objectiveType === "transport"
-          ? `Delivered ${state.progressCount}/${state.totalCollectibles} Carrying ${state.hasCarriedCollectible ? "Yes" : "No"}`
+          ? `Delivered ${state.progressCount}/${state.totalCollectibles}`
           : `Treats ${state.progressCount}/${state.totalCollectibles}`;
 
-      label.text = `Level ${state.levelIndex + 1}: ${state.levelName} - ${state.stageName}  ${modeStatus}  Goal ${goalState}`;
+      label.text = `Level ${state.levelIndex + 1}: ${state.levelName} - ${state.stageName}  ${modeStatus}  ${timerLabel}  ${livesLabel}${hurryLabel}`;
+      const frameColor = state.hurry ? 0x7e1212 : 0x26134c;
+      const bodyColor = state.hurry ? 0x5a1111 : 0x162e72;
+      const stripeColor = state.hurry ? 0xd44747 : 0x6c39c3;
       chrome
         .clear()
         .rect(0, 0, label.width + 40, label.height + 24)
-        .fill({ color: 0x26134c, alpha: 0.92 })
+        .fill({ color: frameColor, alpha: 0.92 })
         .rect(6, 6, label.width + 28, label.height + 12)
-        .fill({ color: 0x162e72, alpha: 0.96 })
+        .fill({ color: bodyColor, alpha: 0.96 })
         .rect(14, 14, label.width + 12, label.height - 4)
         .fill({ color: 0x0d1737, alpha: 1 })
         .rect(14, 14, label.width + 12, 12)
-        .fill({ color: 0x6c39c3, alpha: 1 });
+        .fill({ color: stripeColor, alpha: 1 });
     },
   };
 }

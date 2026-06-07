@@ -17,6 +17,13 @@ const level1: LevelDefinition = {
     speech:
       "Alle Wuerste gesammelt. Hmm, wo sind sie denn hin? Ich habe sie vermutlich gefressen, naja, mein Herrchen kann sich ja selber welche kaufen.",
   },
+  timing: {
+    failSeconds: 60,
+    oneStarSeconds: 60,
+    twoStarSeconds: 50,
+    threeStarSeconds: 40,
+    hurrySeconds: 15,
+  },
   stages: [stage1, stage2, stage3, stage4, stage5, stage6],
 };
 

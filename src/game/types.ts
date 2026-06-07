@@ -135,6 +135,14 @@ export interface TransitionContent {
   subtitle?: string;
 }
 
+export interface LevelTimingDefinition {
+  failSeconds: number;
+  oneStarSeconds: number;
+  twoStarSeconds: number;
+  threeStarSeconds: number;
+  hurrySeconds?: number;
+}
+
 export type LevelThemeKey = "retroOutdoor" | "retroIndoor";
 
 export interface LevelPresentationDefinition {
@@ -195,6 +203,7 @@ export interface LevelDefinition {
   name: string;
   intro: TransitionContent;
   completion: TransitionContent;
+  timing: LevelTimingDefinition;
   presentation?: LevelPresentationDefinition;
   stages: StageDefinition[];
 }

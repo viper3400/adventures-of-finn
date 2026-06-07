@@ -89,6 +89,12 @@ This file describes the current state of the game implementation and the assumpt
 - Each level owns structured transition content:
   - `intro`
   - `completion`
+- Each level owns adjustable time pressure rules in `timing`:
+  - `failSeconds`
+  - `oneStarSeconds`
+  - `twoStarSeconds`
+  - `threeStarSeconds`
+  - optional `hurrySeconds`
 - Each stage is defined by the `StageDefinition` type.
 - Each stage owns its objective-owned collectible presentation and placement:
   - `objective.collectibleVisual`
@@ -127,6 +133,9 @@ This file describes the current state of the game implementation and the assumpt
 - After the title screen, the game shows a startup menu that lets the player begin a new run from level 1 or continue from saved progress.
 - Before a new level starts, the game shows a full-screen intro with the level number and level name, and waits for `Space`.
 - After the last stage of a level, the game shows a `Level geschafft!` screen before advancing, and waits for `Space`.
+- If the level timer expires, the player loses one life, sees a failure screen, and the current level restarts from stage 1.
+- The dog currently has 3 lives for a run.
+- If all 3 lives are lost, progression resets and the run restarts from level 1.
 - The title screen and the level transition screens are driven from `src/game/runtime/ui.ts`.
 - Runtime progression is explicit:
   - `boot`
@@ -158,8 +167,9 @@ This file describes the current state of the game implementation and the assumpt
 
 ## HUD
 
-- A simple text label shows the current level name, current stage name, treat progress, and goal state.
+- A simple text label shows the current level name, current stage name, treat progress, goal state, countdown timer, and remaining lives.
 - HUD text is attached to `app.stage`, not `gameWorld`, so it does not scale with the world.
+- The HUD switches to a hurry warning style when the remaining time falls under the level timing's `hurrySeconds`.
 
 ## Important Current Behaviors
 

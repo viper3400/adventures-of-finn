@@ -151,6 +151,35 @@ export function validateLevels(levels: LevelDefinition[]): LevelDefinition[] {
       throw new Error(`Level name is required for "${level.id}"`);
     }
 
+    if (
+      level.timing.failSeconds <= 0 ||
+      level.timing.oneStarSeconds <= 0 ||
+      level.timing.twoStarSeconds <= 0 ||
+      level.timing.threeStarSeconds <= 0
+    ) {
+      throw new Error(`Level "${level.id}" timing values must be positive`);
+    }
+
+    if (
+      level.timing.threeStarSeconds > level.timing.twoStarSeconds ||
+      level.timing.twoStarSeconds > level.timing.oneStarSeconds ||
+      level.timing.oneStarSeconds > level.timing.failSeconds
+    ) {
+      throw new Error(
+        `Level "${level.id}" timing thresholds must be ordered 3-star <= 2-star <= 1-star <= fail`,
+      );
+    }
+
+    if (
+      level.timing.hurrySeconds !== undefined &&
+      (level.timing.hurrySeconds <= 0 ||
+        level.timing.hurrySeconds >= level.timing.failSeconds)
+    ) {
+      throw new Error(
+        `Level "${level.id}" hurry timing must be between 0 and fail time`,
+      );
+    }
+
     if (!level.stages.length) {
       throw new Error(`Level "${level.id}" must define at least one stage`);
     }
