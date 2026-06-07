@@ -13,11 +13,16 @@ const stage6: StageDefinition = {
     { id: 3, x: 510, y: WORLD_HEIGHT - 420, w: 110, h: 20 },
     { id: 4, x: 710, y: WORLD_HEIGHT - 300, w: 130, h: 20 },
     {
-      id: 5, x: 910, y: WORLD_HEIGHT - 290, w: 130, h: 20, motion: {
+      id: 5,
+      x: 910,
+      y: WORLD_HEIGHT - 290,
+      w: 130,
+      h: 20,
+      motion: {
         vertical: {
           distance: 120,
           speed: 90,
-        }
+        },
       },
     },
     { id: 6, x: 1080, y: WORLD_HEIGHT - 340, w: 110, h: 20 },
@@ -56,21 +61,6 @@ const stage6: StageDefinition = {
         width: 100,
         height: 18,
       },
-    },
-  ],
-  decor: [
-    {
-      id: "laundry-sign",
-      visual: {
-        assetPath: "/assets/store.svg",
-        width: 130,
-        height: 130,
-      },
-      position: {
-        x: 1120,
-        y: 130,
-      },
-      alpha: 0.22,
     },
   ],
 };

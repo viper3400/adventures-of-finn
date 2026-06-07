@@ -44,21 +44,6 @@ const stage6: StageDefinition = {
       },
     },
   ],
-  decor: [
-    {
-      id: "finish-banner",
-      visual: {
-        assetPath: "/assets/logo.svg",
-        width: 120,
-        height: 120,
-      },
-      position: {
-        x: 1140,
-        y: 120,
-      },
-      alpha: 0.2,
-    },
-  ],
 };
 
 export default stage6;
