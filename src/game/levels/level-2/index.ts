@@ -17,7 +17,7 @@ const level2: LevelDefinition = {
     speech: "Alles geliefert. Das war anstrengend, aber sehr professionell.",
   },
   timing: {
-    failSeconds: 140,
+    failSeconds: 150,
     hurrySeconds: 20,
   },
   presentation: {

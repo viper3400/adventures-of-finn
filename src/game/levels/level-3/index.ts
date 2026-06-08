@@ -17,7 +17,7 @@ const level3: LevelDefinition = {
     speech: "Die Kraehen haben aufgegeben. Jetzt gehoert der Platz wieder mir.",
   },
   timing: {
-    failSeconds: 120,
+    failSeconds: 220,
     hurrySeconds: 15,
   },
   stages: [stage1, stage2, stage3, stage4, stage5, stage6],

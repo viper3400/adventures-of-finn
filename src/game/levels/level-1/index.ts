@@ -18,7 +18,7 @@ const level1: LevelDefinition = {
       "Alle Wuerste gesammelt. Hmm, wo sind sie denn hin? Ich habe sie vermutlich gefressen, naja, mein Herrchen kann sich ja selber welche kaufen.",
   },
   timing: {
-    failSeconds: 90,
+    failSeconds: 100,
     hurrySeconds: 15,
   },
   stages: [stage1, stage2, stage3, stage4, stage5, stage6],
