@@ -235,13 +235,10 @@ export async function startGame(): Promise<void> {
 
   app.ticker.add(
     () => {
+      const stageSkipRequested = input.consumeStageSkip();
+
       if (input.consumeDebugToggle()) {
         stageRuntime.toggleDebug();
-      }
-
-      if (input.consumeStageSkip()) {
-        jumpToNextStageDebug();
-        return;
       }
 
       if (!gameFlow.isPlaying()) {
@@ -286,6 +283,11 @@ export async function startGame(): Promise<void> {
           applyGameFlowEffects(gameFlow.advanceTransition());
           input.markJumpUsed();
         }
+        return;
+      }
+
+      if (stageSkipRequested) {
+        jumpToNextStageDebug();
         return;
       }
 

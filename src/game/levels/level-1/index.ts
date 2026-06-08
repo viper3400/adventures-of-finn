@@ -8,14 +8,14 @@ import stage6 from "./stage-6";
 
 const level1: LevelDefinition = {
   id: "level-1",
-  name: "Wurst-Strecke",
+  name: "Wurstsuche",
   intro: {
     speech:
-      "Ich liebe Wuerste. Mein Herrchen liebt Wuerste bestimmt auch. Ich werde alle Wuerste einsammeln!",
+      "Der eine Papa hat mir erzaehlt, dass der andere Papa bald Geburtstag hat. Dafuer braucht es wohl ein Geschenk. Ich suche erst mal Wuerste, weil das Geburtstagskind die bestimmt auch gern frisst.",
   },
   completion: {
     speech:
-      "Alle Wuerste gesammelt. Hmm, wo sind sie denn hin? Ich habe sie vermutlich gefressen, naja, mein Herrchen kann sich ja selber welche kaufen.",
+      "Ich hatte ein tolles Wurstgeschenk gefunden ... aber jetzt sind alle weg. Oh. Ich habe sie unterwegs wohl selber aufgefressen. Dann muss ich weiter nach etwas anderem suchen.",
   },
   timing: {
     failSeconds: 100,

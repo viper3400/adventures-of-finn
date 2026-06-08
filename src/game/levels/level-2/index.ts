@@ -8,13 +8,14 @@ import stage6 from "./stage-6";
 
 const level2: LevelDefinition = {
   id: "level-2",
-  name: "Lieferdienst",
+  name: "Sockensuche",
   intro: {
     speech:
-      "Diesmal nur sammeln reicht nicht. Ich muss jede Wurst ins Laedeli tragen.",
+      "Wuerste waren keine gute Idee. Vielleicht sind Socken ein Geschenk? Ich sammle einfach ganz viele. Hunde wissen zwar nicht genau warum, aber Socken sind wichtig.",
   },
   completion: {
-    speech: "Alles geliefert. Das war anstrengend, aber sehr professionell.",
+    speech:
+      "Moment mal ... das sind ja gar nicht meine Socken. Die haette ich ueberhaupt nicht nehmen duerfen. Also weiter. Ich brauche noch immer ein richtiges Geschenk.",
   },
   timing: {
     failSeconds: 150,

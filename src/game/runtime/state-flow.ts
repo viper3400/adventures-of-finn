@@ -262,7 +262,27 @@ export function createGameFlowController(
       ];
     },
     skipForward(): GameFlowEffect[] {
-      const nextStage = getNextStage(getCurrentStage());
+      const currentStage = getCurrentStage();
+      const nextStage = getNextStage(currentStage);
+      const isFinalStage =
+        currentStage.levelIndex === levels.length - 1 &&
+        currentStage.stageIndex ===
+          levels[currentStage.levelIndex].stages.length - 1;
+      const isNextLevel = nextStage.levelIndex !== currentStage.levelIndex;
+
+      if (isNextLevel) {
+        state = {
+          kind: "levelComplete",
+          completedLevelIndex: currentStage.levelIndex,
+          nextStage,
+          endsGame: isFinalStage,
+        };
+
+        return [
+          { type: "showLevelComplete", levelIndex: currentStage.levelIndex },
+        ];
+      }
+
       state = { kind: "playing", stage: nextStage };
 
       return [

@@ -489,6 +489,17 @@ export function createEndScreen(
   const overlay = new Container();
   const backdrop = new Graphics();
   const endScreenImage = new Sprite(endScreenTexture);
+  const endingText = new Text({
+    text: "Es braucht gar kein Geschenk.\nAm schoensten ist es,\nwenn wir alle drei zusammen sind.",
+    style: {
+      fill: 0xe7f0ff,
+      fontFamily: "Courier New, monospace",
+      fontSize: 24,
+      fontWeight: "800",
+      stroke: { color: 0x10203e, width: 5 },
+      align: "center",
+    },
+  });
   const prompt = new Text({
     text: "SPACE ZURUECK ZUM START",
     style: {
@@ -501,11 +512,13 @@ export function createEndScreen(
   });
 
   endScreenImage.anchor.set(0.5);
+  endingText.anchor.set(0.5);
   prompt.anchor.set(0.5);
 
   overlay.visible = false;
   overlay.addChild(backdrop);
   overlay.addChild(endScreenImage);
+  overlay.addChild(endingText);
   overlay.addChild(prompt);
   app.stage.addChild(overlay);
 
@@ -547,6 +560,7 @@ export function createEndScreen(
 
     endScreenImage.scale.set(scale);
     endScreenImage.position.set(app.screen.width / 2, app.screen.height * 0.44);
+    endingText.position.set(app.screen.width / 2, app.screen.height * 0.8);
     prompt.position.set(app.screen.width / 2, app.screen.height - 72);
   }
 

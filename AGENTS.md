@@ -29,12 +29,19 @@ This file describes the current state of the game implementation and the assumpt
   - `collect`: pickups count immediately on contact
   - `transport`: pickups must be carried to a store before they count
   - `chase`: crows flee to new perches twice and count only on the third scare
+- The current story continues past the original gift search:
+  - `Level 4`: the dog prepares the birthday party
+  - `Level 5`: the dog prepares a cozy shared evening
 - The current content is:
   - `Level 1`
   - `Stage 1` to `Stage 6`
   - `Level 2`
   - `Stage 1` to `Stage 6`
   - `Level 3`
+  - `Stage 1` to `Stage 6`
+  - `Level 4`
+  - `Stage 1` to `Stage 6`
+  - `Level 5`
   - `Stage 1` to `Stage 6`
 - After the last stage of the last level, the game first shows the normal `Level geschafft!` screen for that level, then a dedicated end screen before returning to the start flow.
 
