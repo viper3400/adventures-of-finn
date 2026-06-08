@@ -236,6 +236,7 @@ export async function startGame(): Promise<void> {
   app.ticker.add(
     () => {
       const stageSkipRequested = input.consumeStageSkip();
+      transition.update(app.ticker.deltaMS);
 
       if (input.consumeDebugToggle()) {
         stageRuntime.toggleDebug();
@@ -276,6 +277,12 @@ export async function startGame(): Promise<void> {
         }
 
         if (input.consumeTransitionClose()) {
+          if (transition.isAnimating()) {
+            transition.revealAll();
+            input.markJumpUsed();
+            return;
+          }
+
           if (gameFlow.getState().kind === "gameComplete") {
             progression.resetProgression();
             levelSession.resetRun();

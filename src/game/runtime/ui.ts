@@ -29,6 +29,9 @@ export interface TransitionController {
   show(title: string, subtitle: string, speech: string): void;
   hide(): void;
   layout(): void;
+  update(deltaMs: number): void;
+  isAnimating(): boolean;
+  revealAll(): void;
 }
 
 export interface TitleScreenController {
@@ -259,6 +262,7 @@ export function createTransitionOverlay(
   playerTexture: Sprite["texture"],
   speechBubbleTexture: Sprite["texture"],
 ): TransitionController {
+  const SPEECH_REVEAL_MS_PER_CHARACTER = 24;
   const overlay = new Container();
   const backdrop = new Graphics();
   const title = new Text({
@@ -319,6 +323,9 @@ export function createTransitionOverlay(
 
   const transitionDog = new Sprite(playerTexture);
   const transitionSpeechBubble = new Sprite(speechBubbleTexture);
+  let fullSpeechText = "";
+  let visibleCharacterCount = 0;
+  let speechRevealAccumulatorMs = 0;
   overlay.visible = false;
   overlay.addChild(backdrop);
   overlay.addChild(transitionDog);
@@ -330,10 +337,10 @@ export function createTransitionOverlay(
   app.stage.addChild(overlay);
 
   function layout(): void {
-    const bubbleX = Math.max(app.screen.width * 0.39, 310);
-    const bubbleY = Math.max(172, app.screen.height * 0.2);
-    const bubbleWidth = Math.min(app.screen.width * 0.5, 620);
-    const bubbleHeight = Math.min(app.screen.height * 0.34, 260);
+    const bubbleX = Math.max(app.screen.width * 0.37, 300);
+    const bubbleY = Math.max(156, app.screen.height * 0.18);
+    const bubbleWidth = Math.min(app.screen.width * 0.58, 710);
+    const bubbleHeight = Math.min(app.screen.height * 0.4, 310);
 
     backdrop.clear();
     backdrop
@@ -369,8 +376,8 @@ export function createTransitionOverlay(
 
     title.position.set(app.screen.width / 2, 82);
     subtitle.position.set(app.screen.width / 2, 132);
-    speech.position.set(bubbleX + 84, bubbleY + 44);
-    speech.style.wordWrapWidth = bubbleWidth - 160;
+    speech.position.set(bubbleX + 92, bubbleY + 50);
+    speech.style.wordWrapWidth = bubbleWidth - 184;
     prompt.position.set(app.screen.width / 2, app.screen.height - 72);
 
     const targetWidth = Math.min(app.screen.width * 0.38, 560);
@@ -387,16 +394,52 @@ export function createTransitionOverlay(
     );
   }
 
+  function syncSpeechText(): void {
+    speech.text = fullSpeechText.slice(0, visibleCharacterCount);
+  }
+
   return {
     show(nextTitle: string, nextSubtitle: string, nextSpeech: string): void {
       title.text = nextTitle;
       subtitle.text = nextSubtitle;
-      speech.text = nextSpeech;
+      fullSpeechText = nextSpeech;
+      visibleCharacterCount = 0;
+      speechRevealAccumulatorMs = 0;
+      syncSpeechText();
       overlay.visible = true;
       layout();
     },
     hide(): void {
       overlay.visible = false;
+    },
+    update(deltaMs: number): void {
+      if (!overlay.visible || visibleCharacterCount >= fullSpeechText.length) {
+        return;
+      }
+
+      speechRevealAccumulatorMs += deltaMs;
+      const revealedCharacters = Math.floor(
+        speechRevealAccumulatorMs / SPEECH_REVEAL_MS_PER_CHARACTER,
+      );
+      if (revealedCharacters <= 0) {
+        return;
+      }
+
+      visibleCharacterCount = Math.min(
+        fullSpeechText.length,
+        visibleCharacterCount + revealedCharacters,
+      );
+      speechRevealAccumulatorMs -=
+        revealedCharacters * SPEECH_REVEAL_MS_PER_CHARACTER;
+      syncSpeechText();
+    },
+    isAnimating(): boolean {
+      return overlay.visible && visibleCharacterCount < fullSpeechText.length;
+    },
+    revealAll(): void {
+      visibleCharacterCount = fullSpeechText.length;
+      speechRevealAccumulatorMs = 0;
+      syncSpeechText();
     },
     layout,
   };
