@@ -341,6 +341,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
 
   const levelPlatformGraphics: Graphics[] = [];
   const collectibleSprites: Sprite[] = [];
+  const chaseIndicatorGraphics: Graphics[] = [];
   const decorSprites: Sprite[] = [];
   const deliveryEffects: DeliveryEffect[] = [];
   const debugTexts: Text[] = [];
@@ -547,6 +548,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         sprite.width = collectible.width;
         sprite.height = collectible.height;
       });
+      updateChaseIndicators();
     } else {
       collectibleSprites.forEach((sprite, index) => {
         const collectible = currentCollectibles[index];
@@ -591,6 +593,86 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   function setSpriteFacing(sprite: Sprite, facing: 1 | -1): void {
     const absoluteScaleX = Math.max(0.0001, Math.abs(sprite.scale.x));
     sprite.scale.x = absoluteScaleX * facing;
+  }
+
+  function getChaseRequiredHits(index: number): number {
+    const crowDefinition = getChaseCollectibles()[index];
+    return crowDefinition ? crowDefinition.fleeTargets.length + 1 : 0;
+  }
+
+  function getChaseRemainingHits(index: number): number {
+    const chaseState = chaseCrowStates[index];
+    if (!chaseState || chaseState.completed) {
+      return 0;
+    }
+
+    return Math.max(
+      0,
+      getChaseRequiredHits(index) - chaseState.fleeTargetIndex,
+    );
+  }
+
+  function drawChaseIndicator(
+    gfx: Graphics,
+    x: number,
+    y: number,
+    remainingHits: number,
+    totalHits: number,
+  ): void {
+    const spacing = 14;
+    const radius = 4;
+    const width = Math.max(0, (totalHits - 1) * spacing);
+    const startX = x - width / 2;
+
+    gfx.clear();
+
+    for (let index = 0; index < totalHits; index += 1) {
+      const dotX = startX + index * spacing;
+      const isActive = index < remainingHits;
+
+      gfx
+        .circle(dotX, y, radius + 2)
+        .fill({ color: 0x1b1430, alpha: 0.85 })
+        .circle(dotX, y, radius)
+        .fill({
+          color: isActive ? 0xfff48a : 0x61597c,
+          alpha: isActive ? 1 : 0.75,
+        });
+    }
+  }
+
+  function updateChaseIndicatorPosition(index: number): void {
+    const sprite = collectibleSprites[index];
+    const indicator = chaseIndicatorGraphics[index];
+    if (!sprite || !indicator) {
+      return;
+    }
+
+    const totalHits = getChaseRequiredHits(index);
+    const remainingHits = getChaseRemainingHits(index);
+    indicator.visible = sprite.visible && remainingHits > 0;
+    if (!indicator.visible) {
+      indicator.clear();
+      return;
+    }
+
+    drawChaseIndicator(
+      indicator,
+      sprite.x,
+      sprite.y - sprite.height / 2 - 18,
+      remainingHits,
+      totalHits,
+    );
+  }
+
+  function updateChaseIndicators(): void {
+    if (!isChaseStage()) {
+      return;
+    }
+
+    chaseIndicatorGraphics.forEach((_, index) => {
+      updateChaseIndicatorPosition(index);
+    });
   }
 
   function rebuildDebugOverlay(): void {
@@ -740,6 +822,11 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         sprite.destroy();
       });
       collectibleSprites.length = 0;
+      chaseIndicatorGraphics.forEach((gfx) => {
+        gameWorld.removeChild(gfx);
+        gfx.destroy();
+      });
+      chaseIndicatorGraphics.length = 0;
       clearDecor();
 
       if (storeSprite) {
@@ -841,6 +928,15 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         gameWorld.addChild(sprite);
       });
 
+      if (isChaseStage(stage)) {
+        currentCollectibles.forEach((_, index) => {
+          const indicator = new Graphics();
+          chaseIndicatorGraphics.push(indicator);
+          gameWorld.addChild(indicator);
+          updateChaseIndicatorPosition(index);
+        });
+      }
+
       if (currentStore) {
         const texture = assets.storeTextures.get(currentStore.assetPath);
         if (!texture) {
@@ -918,6 +1014,12 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       if (carriedCollectibleSprite?.visible) {
         gameWorld.setChildIndex(carriedCollectibleSprite, debugIndex);
       }
+
+      chaseIndicatorGraphics.forEach((indicator) => {
+        if (indicator.visible) {
+          gameWorld.setChildIndex(indicator, debugIndex);
+        }
+      });
     },
     getPlatforms(): Platform[] {
       return platforms;
@@ -1116,6 +1218,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
 
             if (chaseState.isEscaping) {
               sprite.visible = false;
+              updateChaseIndicatorPosition(index);
               refreshDebugOverlay();
               return;
             }
@@ -1126,6 +1229,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
               chaseState.fleeingTo = null;
             }
             chaseState.cooldownMs = 300;
+            updateChaseIndicatorPosition(index);
             return;
           }
 
@@ -1139,6 +1243,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
             width: sprite.width,
             height: sprite.height,
           };
+          updateChaseIndicatorPosition(index);
           return;
         }
 
@@ -1171,6 +1276,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
           chaseState.targetX = resolvedTarget.x;
           chaseState.targetY = resolvedTarget.y;
           setSpriteFacing(sprite, chaseState.targetX >= sprite.x ? 1 : -1);
+          updateChaseIndicatorPosition(index);
           refreshDebugOverlay();
           return;
         }
@@ -1181,6 +1287,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         chaseState.targetX = playerX < sprite.x ? WORLD_WIDTH + 160 : -160;
         chaseState.targetY = -120;
         setSpriteFacing(sprite, chaseState.targetX >= sprite.x ? 1 : -1);
+        updateChaseIndicatorPosition(index);
         progressCount += 1;
         redrawGoal();
         spawnDeliverySuccessEffect(sprite.x, sprite.y - sprite.height * 0.2);
