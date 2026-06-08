@@ -18,9 +18,6 @@ const level3: LevelDefinition = {
   },
   timing: {
     failSeconds: 120,
-    oneStarSeconds: 120,
-    twoStarSeconds: 100,
-    threeStarSeconds: 90,
     hurrySeconds: 15,
   },
   stages: [stage1, stage2, stage3, stage4, stage5, stage6],

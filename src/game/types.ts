@@ -153,9 +153,6 @@ export interface TransitionContent {
 
 export interface LevelTimingDefinition {
   failSeconds: number;
-  oneStarSeconds: number;
-  twoStarSeconds: number;
-  threeStarSeconds: number;
   hurrySeconds?: number;
 }
 

@@ -18,9 +18,6 @@ const level2: LevelDefinition = {
   },
   timing: {
     failSeconds: 140,
-    oneStarSeconds: 140,
-    twoStarSeconds: 120,
-    threeStarSeconds: 100,
     hurrySeconds: 20,
   },
   presentation: {

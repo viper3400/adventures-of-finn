@@ -186,23 +186,8 @@ export function validateLevels(levels: LevelDefinition[]): LevelDefinition[] {
       throw new Error(`Level name is required for "${level.id}"`);
     }
 
-    if (
-      level.timing.failSeconds <= 0 ||
-      level.timing.oneStarSeconds <= 0 ||
-      level.timing.twoStarSeconds <= 0 ||
-      level.timing.threeStarSeconds <= 0
-    ) {
+    if (level.timing.failSeconds <= 0) {
       throw new Error(`Level "${level.id}" timing values must be positive`);
-    }
-
-    if (
-      level.timing.threeStarSeconds > level.timing.twoStarSeconds ||
-      level.timing.twoStarSeconds > level.timing.oneStarSeconds ||
-      level.timing.oneStarSeconds > level.timing.failSeconds
-    ) {
-      throw new Error(
-        `Level "${level.id}" timing thresholds must be ordered 3-star <= 2-star <= 1-star <= fail`,
-      );
     }
 
     if (

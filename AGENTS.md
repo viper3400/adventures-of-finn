@@ -94,9 +94,6 @@ This file describes the current state of the game implementation and the assumpt
   - `completion`
 - Each level owns adjustable time pressure rules in `timing`:
   - `failSeconds`
-  - `oneStarSeconds`
-  - `twoStarSeconds`
-  - `threeStarSeconds`
   - optional `hurrySeconds`
 - Each stage is defined by the `StageDefinition` type.
 - Each stage owns its objective-owned collectible presentation and placement:
@@ -135,6 +132,10 @@ This file describes the current state of the game implementation and the assumpt
 - Reloading the game resumes from the saved stage instead of always restarting at level 1 stage 1.
 - On boot, the game shows a dedicated title screen using `public/assets/title.png` and waits for `Space`.
 - After the title screen, the game shows a startup menu that lets the player begin a new run from level 1 or continue from saved progress.
+- The startup menu also lets the player choose a global `Schwierigkeit`:
+  - `Einfach`: 30% more level time
+  - `Normal`: baseline level time
+  - `Schwer`: 20% less level time
 - Before a new level starts, the game shows a full-screen intro with the level number and level name, and waits for `Space`.
 - After the last stage of a level, the game shows a `Level geschafft!` screen before advancing, and waits for `Space`.
 - If the level timer expires, the player loses one life, sees a failure screen, and the current level restarts from stage 1.

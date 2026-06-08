@@ -1,6 +1,7 @@
 import { Container, Graphics, Sprite, Text, type Application } from "pixi.js";
 
 import type { StageObjectiveType } from "../types";
+import { DIFFICULTY_OPTIONS, type GameDifficulty } from "./difficulty";
 
 export interface HudState {
   levelIndex: number;
@@ -37,12 +38,19 @@ export interface TitleScreenController {
 }
 
 export interface StartupMenuController {
-  show(hasContinue: boolean, continueLabel: string): void;
+  show(
+    hasContinue: boolean,
+    continueLabel: string,
+    difficulty: GameDifficulty,
+  ): void;
   hide(): void;
   layout(): void;
   selectPrevious(): void;
   selectNext(): void;
+  selectLeft(): void;
+  selectRight(): void;
   getSelectedAction(): "new" | "continue";
+  getSelectedDifficulty(): GameDifficulty;
 }
 
 export function createHud(app: Application): HudController {
@@ -489,13 +497,33 @@ export function createStartupMenu(
     },
   });
   const hint = new Text({
-    text: "UP/DOWN WAEHLEN  SPACE START",
+    text: "UP/DOWN WAEHLEN  LEFT/RIGHT SCHWIERIGKEIT  SPACE START",
     style: {
       fill: 0xb8d8ff,
       fontFamily: "Courier New, monospace",
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: "700",
       stroke: { color: 0x10203e, width: 4 },
+    },
+  });
+  const difficultyLabel = new Text({
+    text: "Schwierigkeit",
+    style: {
+      fill: 0xc3d9ff,
+      fontFamily: "Courier New, monospace",
+      fontSize: 20,
+      fontWeight: "800",
+      stroke: { color: 0x10203e, width: 4 },
+    },
+  });
+  const difficultyValue = new Text({
+    text: "",
+    style: {
+      fill: 0xfff48a,
+      fontFamily: "Courier New, monospace",
+      fontSize: 28,
+      fontWeight: "900",
+      stroke: { color: 0x221141, width: 4 },
     },
   });
   const newGameOption = new Text({
@@ -531,6 +559,8 @@ export function createStartupMenu(
 
   heading.anchor.set(0.5);
   hint.anchor.set(0.5);
+  difficultyLabel.anchor.set(0.5);
+  difficultyValue.anchor.set(0.5);
   newGameOption.anchor.set(0.5);
   continueOption.anchor.set(0.5);
   continueDetail.anchor.set(0.5);
@@ -538,21 +568,28 @@ export function createStartupMenu(
   titleImage.anchor.set(0.5);
 
   let canContinue = false;
-  let selectedAction: "new" | "continue" = "new";
+  let selectedRow: "difficulty" | "new" | "continue" = "new";
+  let selectedDifficulty: GameDifficulty = DIFFICULTY_OPTIONS[1].id;
 
   function syncSelectorPosition(): void {
-    const target = selectedAction === "new" ? newGameOption : continueOption;
+    const target =
+      selectedRow === "difficulty"
+        ? difficultyValue
+        : selectedRow === "new"
+          ? newGameOption
+          : continueOption;
     selector.position.set(target.x - 220, target.y);
   }
 
   function refreshOptionStyles(): void {
-    newGameOption.style.fill = selectedAction === "new" ? 0xfff48a : 0xe7f0ff;
+    difficultyValue.text = `< ${DIFFICULTY_OPTIONS.find((option) => option.id === selectedDifficulty)?.label ?? "Normal"} >`;
+    difficultyLabel.style.fill =
+      selectedRow === "difficulty" ? 0xfff48a : 0xc3d9ff;
+    difficultyValue.style.fill =
+      selectedRow === "difficulty" ? 0xfff48a : 0xe7f0ff;
+    newGameOption.style.fill = selectedRow === "new" ? 0xfff48a : 0xe7f0ff;
     continueOption.style.fill =
-      selectedAction === "continue"
-        ? 0xfff48a
-        : canContinue
-          ? 0xe7f0ff
-          : 0x6d7591;
+      selectedRow === "continue" ? 0xfff48a : canContinue ? 0xe7f0ff : 0x6d7591;
     continueDetail.style.fill = canContinue ? 0xc3d9ff : 0x6d7591;
     selector.visible = true;
     syncSelectorPosition();
@@ -564,6 +601,8 @@ export function createStartupMenu(
   overlay.addChild(panel);
   overlay.addChild(selector);
   overlay.addChild(heading);
+  overlay.addChild(difficultyLabel);
+  overlay.addChild(difficultyValue);
   overlay.addChild(newGameOption);
   overlay.addChild(continueOption);
   overlay.addChild(continueDetail);
@@ -601,7 +640,7 @@ export function createStartupMenu(
     titleImage.position.set(screenWidth / 2, screenHeight * 0.21);
 
     const panelWidth = Math.min(screenWidth * 0.72, 760);
-    const panelHeight = Math.min(screenHeight * 0.42, 320);
+    const panelHeight = Math.min(screenHeight * 0.46, 360);
     const panelX = (screenWidth - panelWidth) / 2;
     const panelY = screenHeight * 0.42;
 
@@ -626,17 +665,24 @@ export function createStartupMenu(
       .fill({ color: 0x203c8b });
 
     heading.position.set(screenWidth / 2, panelY + 54);
-    newGameOption.position.set(screenWidth / 2, panelY + 132);
-    continueOption.position.set(screenWidth / 2, panelY + 192);
-    continueDetail.position.set(screenWidth / 2, panelY + 226);
+    difficultyLabel.position.set(screenWidth / 2, panelY + 110);
+    difficultyValue.position.set(screenWidth / 2, panelY + 144);
+    newGameOption.position.set(screenWidth / 2, panelY + 202);
+    continueOption.position.set(screenWidth / 2, panelY + 258);
+    continueDetail.position.set(screenWidth / 2, panelY + 292);
     hint.position.set(screenWidth / 2, panelY + panelHeight - 42);
     syncSelectorPosition();
   }
 
   return {
-    show(hasContinueValue: boolean, continueLabel: string): void {
+    show(
+      hasContinueValue: boolean,
+      continueLabel: string,
+      difficulty: GameDifficulty,
+    ): void {
       canContinue = hasContinueValue;
-      selectedAction = canContinue ? "continue" : "new";
+      selectedRow = "difficulty";
+      selectedDifficulty = difficulty;
       newGameOption.text = "Neues Spiel";
       continueOption.text = canContinue
         ? "Fortsetzen"
@@ -659,15 +705,52 @@ export function createStartupMenu(
       layout();
     },
     selectPrevious(): void {
-      selectedAction = "new";
+      if (selectedRow === "continue") {
+        selectedRow = "new";
+      } else if (selectedRow === "new") {
+        selectedRow = "difficulty";
+      }
       refreshOptionStyles();
     },
     selectNext(): void {
-      selectedAction = canContinue ? "continue" : "new";
+      if (selectedRow === "difficulty") {
+        selectedRow = "new";
+      } else if (selectedRow === "new" && canContinue) {
+        selectedRow = "continue";
+      }
+      refreshOptionStyles();
+    },
+    selectLeft(): void {
+      if (selectedRow !== "difficulty") {
+        return;
+      }
+
+      const currentIndex = DIFFICULTY_OPTIONS.findIndex(
+        (option) => option.id === selectedDifficulty,
+      );
+      const nextIndex =
+        (currentIndex - 1 + DIFFICULTY_OPTIONS.length) %
+        DIFFICULTY_OPTIONS.length;
+      selectedDifficulty = DIFFICULTY_OPTIONS[nextIndex].id;
+      refreshOptionStyles();
+    },
+    selectRight(): void {
+      if (selectedRow !== "difficulty") {
+        return;
+      }
+
+      const currentIndex = DIFFICULTY_OPTIONS.findIndex(
+        (option) => option.id === selectedDifficulty,
+      );
+      const nextIndex = (currentIndex + 1) % DIFFICULTY_OPTIONS.length;
+      selectedDifficulty = DIFFICULTY_OPTIONS[nextIndex].id;
       refreshOptionStyles();
     },
     getSelectedAction(): "new" | "continue" {
-      return selectedAction;
+      return selectedRow === "continue" ? "continue" : "new";
+    },
+    getSelectedDifficulty(): GameDifficulty {
+      return selectedDifficulty;
     },
   };
 }

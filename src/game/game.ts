@@ -7,6 +7,7 @@ import {
 } from "./level-schema";
 import { LEVELS } from "./levels";
 import { loadGameAssets } from "./runtime/assets";
+import { getDifficultyOption } from "./runtime/difficulty";
 import { createInputController } from "./runtime/input";
 import {
   createLevelSessionController,
@@ -58,10 +59,6 @@ export async function startGame(): Promise<void> {
   );
   let lastLevelCompletion: LevelCompletionResult | null = null;
   let previousHurry = false;
-
-  function formatStars(starsEarned: number): string {
-    return `${"*".repeat(starsEarned)}${"-".repeat(3 - starsEarned)}`;
-  }
 
   function updateHud(): void {
     const level = stageRuntime.getCurrentLevel();
@@ -157,6 +154,7 @@ export async function startGame(): Promise<void> {
     startupMenu.show(
       progression.hasStoredProgression(),
       `Weiter bei Level ${levelNumber}`,
+      levelSession.getDifficulty(),
     );
   }
 
@@ -172,8 +170,11 @@ export async function startGame(): Promise<void> {
 
   function showLevelComplete(levelIndex: number): void {
     const level = LEVELS[levelIndex];
+    const difficultyLabel = getDifficultyOption(
+      levelSession.getDifficulty(),
+    ).label;
     const completionHint = lastLevelCompletion
-      ? `Result ${lastLevelCompletion.elapsedSeconds}s  Stars ${formatStars(lastLevelCompletion.starsEarned)}`
+      ? `Result ${lastLevelCompletion.elapsedSeconds}s  Schwierigkeit ${difficultyLabel}`
       : "Result unavailable";
     const content = getTransitionContent(
       level.completion,
@@ -236,13 +237,23 @@ export async function startGame(): Promise<void> {
             startupMenu.selectNext();
           }
 
+          if (input.consumeMenuLeft()) {
+            startupMenu.selectLeft();
+          }
+
+          if (input.consumeMenuRight()) {
+            startupMenu.selectRight();
+          }
+
           if (input.consumeTransitionClose()) {
             if (startupMenu.getSelectedAction() === "new") {
               progression.resetProgression();
               levelSession.resetRun();
+              levelSession.setDifficulty(startupMenu.getSelectedDifficulty());
               applyGameFlowEffects(gameFlow.startNewGame());
             } else {
               levelSession.resetRun();
+              levelSession.setDifficulty(startupMenu.getSelectedDifficulty());
               applyGameFlowEffects(gameFlow.continueGame());
             }
             input.markJumpUsed();
@@ -317,9 +328,7 @@ export async function startGame(): Promise<void> {
           stageRuntime.getCurrentStageIndex() ===
           stageRuntime.getCurrentLevel().stages.length - 1;
         if (isLastStage) {
-          lastLevelCompletion = levelSession.completeLevel(
-            stageRuntime.getCurrentLevelIndex(),
-          );
+          lastLevelCompletion = levelSession.completeLevel();
         } else {
           lastLevelCompletion = null;
         }

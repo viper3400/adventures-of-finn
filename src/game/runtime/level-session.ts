@@ -1,8 +1,12 @@
 import type { LevelDefinition } from "../types";
+import {
+  DEFAULT_DIFFICULTY,
+  getDifficultyOption,
+  type GameDifficulty,
+} from "./difficulty";
 
 export interface LevelCompletionResult {
   elapsedSeconds: number;
-  starsEarned: 1 | 2 | 3;
 }
 
 export interface LevelTimeoutResult {
@@ -15,8 +19,10 @@ export interface LevelSessionController {
   resetRun(): void;
   beginLevel(levelIndex: number): void;
   setRunning(running: boolean): void;
+  setDifficulty(difficulty: GameDifficulty): void;
+  getDifficulty(): GameDifficulty;
   update(deltaMs: number): LevelTimeoutResult | null;
-  completeLevel(levelIndex: number): LevelCompletionResult;
+  completeLevel(): LevelCompletionResult;
   getLivesRemaining(): number;
   getTimeRemainingSeconds(): number;
   isHurry(): boolean;
@@ -34,6 +40,7 @@ export function createLevelSessionController(
   let currentFailMs = 0;
   let hurryMs = 0;
   let running = false;
+  let difficulty = DEFAULT_DIFFICULTY;
 
   function getLevel(levelIndex: number): LevelDefinition {
     return levels[levelIndex];
@@ -41,10 +48,15 @@ export function createLevelSessionController(
 
   function setLevelTiming(levelIndex: number): void {
     const level = getLevel(levelIndex);
+    const option = getDifficultyOption(difficulty);
     currentLevelIndex = levelIndex;
-    currentFailMs = level.timing.failSeconds * 1000;
+    currentFailMs = Math.round(
+      level.timing.failSeconds * option.timerMultiplier * 1000,
+    );
     timeRemainingMs = currentFailMs;
-    hurryMs = (level.timing.hurrySeconds ?? 15) * 1000;
+    hurryMs = Math.round(
+      (level.timing.hurrySeconds ?? 15) * option.timerMultiplier * 1000,
+    );
   }
 
   return {
@@ -62,6 +74,12 @@ export function createLevelSessionController(
     },
     setRunning(nextRunning: boolean): void {
       running = nextRunning;
+    },
+    setDifficulty(nextDifficulty: GameDifficulty): void {
+      difficulty = nextDifficulty;
+    },
+    getDifficulty(): GameDifficulty {
+      return difficulty;
     },
     update(deltaMs: number): LevelTimeoutResult | null {
       if (!running || currentLevelIndex === null) {
@@ -94,8 +112,7 @@ export function createLevelSessionController(
         restartLevelIndex,
       };
     },
-    completeLevel(levelIndex: number): LevelCompletionResult {
-      const level = getLevel(levelIndex);
+    completeLevel(): LevelCompletionResult {
       const elapsedSeconds = Math.max(
         0,
         Math.ceil((currentFailMs - timeRemainingMs) / 1000),
@@ -103,14 +120,7 @@ export function createLevelSessionController(
 
       running = false;
 
-      if (elapsedSeconds <= level.timing.threeStarSeconds) {
-        return { elapsedSeconds, starsEarned: 3 };
-      }
-      if (elapsedSeconds <= level.timing.twoStarSeconds) {
-        return { elapsedSeconds, starsEarned: 2 };
-      }
-
-      return { elapsedSeconds, starsEarned: 1 };
+      return { elapsedSeconds };
     },
     getLivesRemaining(): number {
       return livesRemaining;

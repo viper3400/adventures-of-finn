@@ -6,6 +6,8 @@ export interface InputController {
   markJumpUsed(): void;
   consumeMenuUp(): boolean;
   consumeMenuDown(): boolean;
+  consumeMenuLeft(): boolean;
+  consumeMenuRight(): boolean;
   consumeDebugToggle(): boolean;
   consumeStageSkip(): boolean;
   consumeTransitionClose(): boolean;
@@ -17,6 +19,8 @@ export function createInputController(): InputController {
   let jumpReady = true;
   let menuUpRequested = false;
   let menuDownRequested = false;
+  let menuLeftRequested = false;
+  let menuRightRequested = false;
   let debugToggleRequested = false;
   let stageSkipRequested = false;
   let transitionCloseRequested = false;
@@ -39,6 +43,14 @@ export function createInputController(): InputController {
 
     if (key === "arrowdown" && !event.repeat) {
       menuDownRequested = true;
+    }
+
+    if ((key === "arrowleft" || key === "a") && !event.repeat) {
+      menuLeftRequested = true;
+    }
+
+    if ((key === "arrowright" || key === "d") && !event.repeat) {
+      menuRightRequested = true;
     }
 
     if (key === "s" && !event.repeat) {
@@ -97,6 +109,16 @@ export function createInputController(): InputController {
     consumeMenuDown(): boolean {
       const requested = menuDownRequested;
       menuDownRequested = false;
+      return requested;
+    },
+    consumeMenuLeft(): boolean {
+      const requested = menuLeftRequested;
+      menuLeftRequested = false;
+      return requested;
+    },
+    consumeMenuRight(): boolean {
+      const requested = menuRightRequested;
+      menuRightRequested = false;
       return requested;
     },
     consumeDebugToggle(): boolean {
