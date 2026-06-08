@@ -59,39 +59,40 @@ export interface StartupMenuController {
   getSelectedDifficulty(): GameDifficulty;
 }
 
-export function createHud(app: Application): HudController {
+export function createHud(
+  app: Application,
+  dogFaceTexture: Sprite["texture"],
+): HudController {
+  const hudTextStyle = {
+    fill: 0xfff7b1,
+    fontFamily: "Courier New, monospace",
+    fontSize: 22,
+    fontWeight: "800",
+    stroke: { color: 0x221141, width: 4 },
+  } as const;
   const infoChrome = new Graphics();
   const infoLabel = new Text({
     text: "",
-    style: {
-      fill: 0xfff7b1,
-      fontFamily: "Courier New, monospace",
-      fontSize: 22,
-      fontWeight: "800",
-      stroke: { color: 0x221141, width: 4 },
-    },
+    style: hudTextStyle,
   });
   const timeChrome = new Graphics();
   const timeLabel = new Text({
     text: "",
-    style: {
-      fill: 0xfff7b1,
-      fontFamily: "Courier New, monospace",
-      fontSize: 22,
-      fontWeight: "800",
-      stroke: { color: 0x221141, width: 4 },
-    },
+    style: hudTextStyle,
   });
   const livesChrome = new Graphics();
   const livesLabel = new Text({
-    text: "",
-    style: {
-      fill: 0xfff7b1,
-      fontFamily: "Courier New, monospace",
-      fontSize: 22,
-      fontWeight: "800",
-      stroke: { color: 0x221141, width: 4 },
-    },
+    text: "Lives",
+    style: hudTextStyle,
+  });
+  const livesIcons = new Container();
+  const lifeFaces = Array.from({ length: 3 }, () => {
+    const sprite = new Sprite(dogFaceTexture);
+    sprite.anchor.set(0.5);
+    sprite.width = 34;
+    sprite.height = 28;
+    livesIcons.addChild(sprite);
+    return sprite;
   });
 
   infoChrome.position.set(16, 16);
@@ -100,6 +101,13 @@ export function createHud(app: Application): HudController {
   timeLabel.position.set(0, 32);
   livesChrome.position.set(0, 16);
   livesLabel.position.set(0, 32);
+  livesIcons.position.set(0, 34);
+
+  const reservedTimeWidth = new Text({
+    text: "Time 999s",
+    style: hudTextStyle,
+  }).width;
+  const reservedLivesWidth = livesLabel.width + 18 + lifeFaces.length * 34;
 
   app.stage.addChild(infoChrome);
   app.stage.addChild(infoLabel);
@@ -107,6 +115,7 @@ export function createHud(app: Application): HudController {
   app.stage.addChild(timeLabel);
   app.stage.addChild(livesChrome);
   app.stage.addChild(livesLabel);
+  app.stage.addChild(livesIcons);
 
   function drawBox(
     chrome: Graphics,
@@ -131,7 +140,6 @@ export function createHud(app: Application): HudController {
   return {
     update(state: HudState): void {
       const timerLabel = `Time ${state.timeRemainingSeconds}s`;
-      const livesLabelText = `Lives ${state.livesRemaining}`;
       const modeStatus =
         state.objectiveType === "transport"
           ? `Delivered ${state.progressCount}/${state.totalCollectibles}`
@@ -141,7 +149,10 @@ export function createHud(app: Application): HudController {
 
       infoLabel.text = `Level ${state.levelIndex + 1}: ${state.levelName} - ${state.stageName}  ${modeStatus}`;
       timeLabel.text = timerLabel;
-      livesLabel.text = livesLabelText;
+      lifeFaces.forEach((face, index) => {
+        face.visible = index < state.livesRemaining;
+        face.position.set(17 + index * 34, 14);
+      });
 
       drawBox(
         infoChrome,
@@ -153,7 +164,7 @@ export function createHud(app: Application): HudController {
       );
       drawBox(
         timeChrome,
-        timeLabel.width,
+        reservedTimeWidth,
         timeLabel.height,
         state.hurry ? 0x7e1212 : 0x26134c,
         state.hurry ? 0x5a1111 : 0x162e72,
@@ -161,7 +172,7 @@ export function createHud(app: Application): HudController {
       );
       drawBox(
         livesChrome,
-        livesLabel.width,
+        reservedLivesWidth,
         livesLabel.height,
         0x26134c,
         0x162e72,
@@ -169,11 +180,15 @@ export function createHud(app: Application): HudController {
       );
 
       const infoBoxWidth = infoLabel.width + 40;
-      const timeBoxWidth = timeLabel.width + 40;
+      const timeBoxWidth = reservedTimeWidth + 40;
       timeChrome.position.set(32 + infoBoxWidth, 16);
       timeLabel.position.set(52 + infoBoxWidth, 32);
       livesChrome.position.set(48 + infoBoxWidth + timeBoxWidth, 16);
       livesLabel.position.set(68 + infoBoxWidth + timeBoxWidth, 32);
+      livesIcons.position.set(
+        68 + infoBoxWidth + timeBoxWidth + livesLabel.width + 18,
+        34,
+      );
     },
   };
 }

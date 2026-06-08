@@ -42,7 +42,7 @@ export async function startGame(): Promise<void> {
   const progression = createProgressionController(LEVELS);
   const levelSession = createLevelSessionController(LEVELS);
 
-  const hud = createHud(app);
+  const hud = createHud(app, assets.dogFaceTexture);
   const hurryOverlay = createHurryOverlay(app);
   const titleScreen = createTitleScreen(app, assets.titleTexture);
   const endScreen = createEndScreen(app, assets.endScreenTexture);
