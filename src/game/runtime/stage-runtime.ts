@@ -588,6 +588,11 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     debugLayer.addChild(label);
   }
 
+  function setSpriteFacing(sprite: Sprite, facing: 1 | -1): void {
+    const absoluteScaleX = Math.max(0.0001, Math.abs(sprite.scale.x));
+    sprite.scale.x = absoluteScaleX * facing;
+  }
+
   function rebuildDebugOverlay(): void {
     clearDebugOverlay();
 
@@ -1082,7 +1087,11 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
 
       collectibleSprites.forEach((sprite, index) => {
         const chaseState = chaseCrowStates[index];
-        if (!chaseState || chaseState.completed || !sprite.visible) {
+        if (
+          !chaseState ||
+          (chaseState.completed && !chaseState.isFlying) ||
+          !sprite.visible
+        ) {
           return;
         }
 
@@ -1161,7 +1170,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
           chaseState.isFlying = true;
           chaseState.targetX = resolvedTarget.x;
           chaseState.targetY = resolvedTarget.y;
-          sprite.scale.x = chaseState.targetX >= sprite.x ? 1 : -1;
+          setSpriteFacing(sprite, chaseState.targetX >= sprite.x ? 1 : -1);
           refreshDebugOverlay();
           return;
         }
@@ -1171,7 +1180,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         chaseState.isFlying = true;
         chaseState.targetX = playerX < sprite.x ? WORLD_WIDTH + 160 : -160;
         chaseState.targetY = -120;
-        sprite.scale.x = chaseState.targetX >= sprite.x ? 1 : -1;
+        setSpriteFacing(sprite, chaseState.targetX >= sprite.x ? 1 : -1);
         progressCount += 1;
         redrawGoal();
         spawnDeliverySuccessEffect(sprite.x, sprite.y - sprite.height * 0.2);

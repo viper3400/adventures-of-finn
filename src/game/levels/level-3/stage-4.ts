@@ -59,7 +59,7 @@ const stage4: StageDefinition = {
         platform: 2,
         offsetX: 74,
         fleeTargets: [
-          { platform: 4, offsetX: 44 },
+          { platform: "ground", offsetX: 920 },
           { platform: 1, offsetX: 96 },
         ],
       },
@@ -68,7 +68,7 @@ const stage4: StageDefinition = {
         offsetX: 82,
         fleeTargets: [
           { platform: 2, offsetX: 22 },
-          { platform: 4, offsetX: 88 },
+          { platform: "ground", offsetX: 1120 },
         ],
       },
       {
