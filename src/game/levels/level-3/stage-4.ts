@@ -25,12 +25,12 @@ const stage4: StageDefinition = {
     {
       id: 3,
       x: 660,
-      y: WORLD_HEIGHT - 220,
+      y: WORLD_HEIGHT - 270,
       w: 130,
       h: 18,
       motion: {
         vertical: {
-          distance: 110,
+          distance: 150,
           speed: 80,
         },
       },

@@ -8,11 +8,39 @@ const stage3: StageDefinition = {
     surfaceY: WORLD_HEIGHT - GROUND_HEIGHT,
   },
   platforms: [
-    { id: 1, x: 220, y: WORLD_HEIGHT - 180, w: 140, h: 18 },
-    { id: 2, x: 420, y: WORLD_HEIGHT - 330, w: 130, h: 18 },
+    {
+      id: 1,
+      x: 220,
+      y: WORLD_HEIGHT - 280,
+      w: 140,
+      h: 18,
+      motion: {
+        vertical: {
+          distance: 130,
+          speed: 80,
+        },
+      },
+    },
+    {
+      id: 2, x: 420, y: WORLD_HEIGHT - 330, w: 130, h: 18,
+      motion: {
+        horizontal: {
+          distance: 160,
+          speed: 80,
+        },
+      }
+    },
     { id: 3, x: 640, y: WORLD_HEIGHT - 470, w: 140, h: 18 },
     { id: 4, x: 880, y: WORLD_HEIGHT - 330, w: 130, h: 18 },
-    { id: 5, x: 1060, y: WORLD_HEIGHT - 210, w: 120, h: 18 },
+    {
+      id: 5, x: 1060, y: WORLD_HEIGHT - 280, w: 120, h: 18,
+      motion: {
+        vertical: {
+          distance: 130,
+          speed: 80,
+        },
+      },
+    },
   ],
   goal: { platform: 3, offsetX: 98, width: 64, height: 64 },
   objective: {
