@@ -36,7 +36,7 @@ This file describes the current state of the game implementation and the assumpt
   - `Stage 1` to `Stage 6`
   - `Level 3`
   - `Stage 1` to `Stage 6`
-- After the last stage of the last level, progression loops back to the first stage of the first level.
+- After the last stage of the last level, the game first shows the normal `Level geschafft!` screen for that level, then a dedicated end screen before returning to the start flow.
 
 ## Controls
 
@@ -128,6 +128,7 @@ This file describes the current state of the game implementation and the assumpt
   - resets the player to spawn
 - Goal completion advances to the next stage inside the same level first.
 - If the current stage is the last stage of the current level, goal completion advances to the first stage of the next level.
+- If the player clears the last stage of the last level, the game first shows the normal level completion screen, then a dedicated final screen using `public/assets/end-screen.png`, and returns to the title flow on `Space`.
 - Progression is persisted in browser `localStorage` as the furthest reached stage.
 - Reloading the game resumes from the saved stage instead of always restarting at level 1 stage 1.
 - On boot, the game shows a dedicated title screen using `public/assets/title.png` and waits for `Space`.

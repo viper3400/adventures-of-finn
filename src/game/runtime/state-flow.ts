@@ -11,7 +11,13 @@ export type GameFlowState =
   | { kind: "menu"; resumeStage: StageRef; hasStoredProgress: boolean }
   | { kind: "levelIntro"; stage: StageRef }
   | { kind: "playing"; stage: StageRef }
-  | { kind: "levelComplete"; completedLevelIndex: number; nextStage: StageRef }
+  | {
+      kind: "levelComplete";
+      completedLevelIndex: number;
+      nextStage: StageRef;
+      endsGame: boolean;
+    }
+  | { kind: "gameComplete"; completedLevelIndex: number }
   | {
       kind: "levelFailed";
       failedLevelIndex: number;
@@ -27,6 +33,7 @@ export type GameFlowEffect =
   | { type: "loadStage"; stage: StageRef }
   | { type: "showLevelIntro"; levelIndex: number }
   | { type: "showLevelComplete"; levelIndex: number }
+  | { type: "showGameComplete"; levelIndex: number }
   | {
       type: "showLevelFailure";
       levelIndex: number;
@@ -84,6 +91,8 @@ export function createGameFlowController(
         return state.stage;
       case "levelComplete":
         return state.nextStage;
+      case "gameComplete":
+        return { levelIndex: 0, stageIndex: 0 };
       case "levelFailed":
         return state.restartStage;
     }
@@ -124,6 +133,20 @@ export function createGameFlowController(
           return [{ type: "hideTransition" }];
         }
         case "levelComplete": {
+          if (state.endsGame) {
+            state = {
+              kind: "gameComplete",
+              completedLevelIndex: state.completedLevelIndex,
+            };
+            return [
+              { type: "hideTransition" },
+              {
+                type: "showGameComplete",
+                levelIndex: state.completedLevelIndex,
+              },
+            ];
+          }
+
           const nextStage = state.nextStage;
           state = { kind: "levelIntro", stage: nextStage };
           return [
@@ -131,6 +154,15 @@ export function createGameFlowController(
             { type: "loadStage", stage: nextStage },
             { type: "showLevelIntro", levelIndex: nextStage.levelIndex },
           ];
+        }
+        case "gameComplete": {
+          const restartStage = { levelIndex: 0, stageIndex: 0 };
+          state = {
+            kind: "title",
+            resumeStage: restartStage,
+            hasStoredProgress: false,
+          };
+          return [{ type: "showTitleScreen" }];
         }
         case "levelFailed": {
           const restartStage = state.restartStage;
@@ -180,6 +212,10 @@ export function createGameFlowController(
 
       const currentStage = state.stage;
       const nextStage = getNextStage(currentStage);
+      const isFinalStage =
+        currentStage.levelIndex === levels.length - 1 &&
+        currentStage.stageIndex ===
+          levels[currentStage.levelIndex].stages.length - 1;
       const isNextLevel = nextStage.levelIndex !== currentStage.levelIndex;
 
       if (!isNextLevel) {
@@ -191,6 +227,7 @@ export function createGameFlowController(
         kind: "levelComplete",
         completedLevelIndex: currentStage.levelIndex,
         nextStage,
+        endsGame: isFinalStage,
       };
 
       return [

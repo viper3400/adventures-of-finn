@@ -37,6 +37,12 @@ export interface TitleScreenController {
   layout(): void;
 }
 
+export interface EndScreenController {
+  show(): void;
+  hide(): void;
+  layout(): void;
+}
+
 export interface StartupMenuController {
   show(
     hasContinue: boolean,
@@ -446,6 +452,86 @@ export function createTitleScreen(
 
     titleImage.scale.set(scale);
     titleImage.position.set(app.screen.width / 2, app.screen.height * 0.45);
+    prompt.position.set(app.screen.width / 2, app.screen.height - 72);
+  }
+
+  return {
+    show(): void {
+      overlay.visible = true;
+      layout();
+    },
+    hide(): void {
+      overlay.visible = false;
+    },
+    layout,
+  };
+}
+
+export function createEndScreen(
+  app: Application,
+  endScreenTexture: Sprite["texture"],
+): EndScreenController {
+  const overlay = new Container();
+  const backdrop = new Graphics();
+  const endScreenImage = new Sprite(endScreenTexture);
+  const prompt = new Text({
+    text: "SPACE ZURUECK ZUM START",
+    style: {
+      fill: 0xfff48a,
+      fontFamily: "Courier New, monospace",
+      fontSize: 22,
+      fontWeight: "800",
+      stroke: { color: 0x35115b, width: 5 },
+    },
+  });
+
+  endScreenImage.anchor.set(0.5);
+  prompt.anchor.set(0.5);
+
+  overlay.visible = false;
+  overlay.addChild(backdrop);
+  overlay.addChild(endScreenImage);
+  overlay.addChild(prompt);
+  app.stage.addChild(overlay);
+
+  function layout(): void {
+    backdrop.clear();
+    backdrop
+      .rect(0, 0, app.screen.width, app.screen.height)
+      .fill({ color: 0x120826, alpha: 1 })
+      .rect(0, 0, app.screen.width, app.screen.height * 0.22)
+      .fill({ color: 0x2a1050, alpha: 1 })
+      .rect(
+        0,
+        app.screen.height * 0.22,
+        app.screen.width,
+        app.screen.height * 0.26,
+      )
+      .fill({ color: 0x1a2d74, alpha: 1 })
+      .rect(
+        0,
+        app.screen.height * 0.48,
+        app.screen.width,
+        app.screen.height * 0.52,
+      )
+      .fill({ color: 0x0e1737, alpha: 1 });
+
+    for (let y = 0; y < app.screen.height; y += 8) {
+      backdrop
+        .rect(0, y, app.screen.width, 2)
+        .fill({ color: 0xffffff, alpha: 0.035 });
+    }
+
+    const maxWidth = app.screen.width * 0.92;
+    const maxHeight = app.screen.height * 0.78;
+    const scale = Math.min(
+      maxWidth / endScreenImage.texture.width,
+      maxHeight / endScreenImage.texture.height,
+      1,
+    );
+
+    endScreenImage.scale.set(scale);
+    endScreenImage.position.set(app.screen.width / 2, app.screen.height * 0.44);
     prompt.position.set(app.screen.width / 2, app.screen.height - 72);
   }
 

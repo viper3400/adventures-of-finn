@@ -21,6 +21,7 @@ import {
 } from "./runtime/state-flow";
 import { createStageRuntime } from "./runtime/stage-runtime";
 import {
+  createEndScreen,
   createHud,
   createHurryOverlay,
   createStartupMenu,
@@ -44,6 +45,7 @@ export async function startGame(): Promise<void> {
   const hud = createHud(app);
   const hurryOverlay = createHurryOverlay(app);
   const titleScreen = createTitleScreen(app, assets.titleTexture);
+  const endScreen = createEndScreen(app, assets.endScreenTexture);
   const startupMenu = createStartupMenu(app, assets.titleTexture);
   const transition = createTransitionOverlay(
     app,
@@ -81,6 +83,7 @@ export async function startGame(): Promise<void> {
     stageRuntime.updateViewport(app.screen.width, app.screen.height);
     hurryOverlay.layout();
     titleScreen.layout();
+    endScreen.layout();
     startupMenu.layout();
     transition.layout();
   }
@@ -112,16 +115,19 @@ export async function startGame(): Promise<void> {
       switch (effect.type) {
         case "hideTransition":
           titleScreen.hide();
+          endScreen.hide();
           startupMenu.hide();
           transition.hide();
           break;
         case "showTitleScreen":
+          endScreen.hide();
           startupMenu.hide();
           transition.hide();
           titleScreen.show();
           break;
         case "showStartupMenu":
           titleScreen.hide();
+          endScreen.hide();
           transition.hide();
           showStartupMenu();
           break;
@@ -133,6 +139,9 @@ export async function startGame(): Promise<void> {
           break;
         case "showLevelComplete":
           showLevelComplete(effect.levelIndex);
+          break;
+        case "showGameComplete":
+          showGameComplete(effect.levelIndex);
           break;
         case "showLevelFailure":
           showLevelFailure(
@@ -182,6 +191,14 @@ export async function startGame(): Promise<void> {
       `${level.name} abgeschlossen - ${completionHint}`,
     );
     transition.show(content.title, content.subtitle, content.speech);
+  }
+
+  function showGameComplete(levelIndex: number): void {
+    void levelIndex;
+    titleScreen.hide();
+    startupMenu.hide();
+    transition.hide();
+    endScreen.show();
   }
 
   function showLevelFailure(
@@ -262,6 +279,10 @@ export async function startGame(): Promise<void> {
         }
 
         if (input.consumeTransitionClose()) {
+          if (gameFlow.getState().kind === "gameComplete") {
+            progression.resetProgression();
+            levelSession.resetRun();
+          }
           applyGameFlowEffects(gameFlow.advanceTransition());
           input.markJumpUsed();
         }
