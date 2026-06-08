@@ -496,13 +496,19 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
 
   function getChaseFleeSpeed(stage = getCurrentStage()): number {
     return stage.objective.type === "chase"
-      ? (stage.objective.fleeSpeed ?? CHASE_FLEE_SPEED)
+      ? Math.max(
+          stage.objective.fleeSpeed ?? CHASE_FLEE_SPEED,
+          CHASE_FLEE_SPEED,
+        )
       : CHASE_FLEE_SPEED;
   }
 
   function getChaseEscapeSpeed(stage = getCurrentStage()): number {
     return stage.objective.type === "chase"
-      ? (stage.objective.escapeSpeed ?? CHASE_ESCAPE_SPEED)
+      ? Math.max(
+          stage.objective.escapeSpeed ?? CHASE_ESCAPE_SPEED,
+          CHASE_ESCAPE_SPEED,
+        )
       : CHASE_ESCAPE_SPEED;
   }
 

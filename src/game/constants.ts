@@ -26,5 +26,5 @@ export const LEG_WALK_ANGLE = 0.22;
 export const LEG_AIRBORNE_FRONT_ANGLE = 0.16;
 export const LEG_AIRBORNE_REAR_ANGLE = -0.12;
 export const CHASE_TRIGGER_RADIUS = 150;
-export const CHASE_FLEE_SPEED = 320;
-export const CHASE_ESCAPE_SPEED = 430;
+export const CHASE_FLEE_SPEED = 520;
+export const CHASE_ESCAPE_SPEED = 680;
