@@ -10,22 +10,30 @@ const stage3: StageDefinition = {
   platforms: [
     { id: 1, x: 210, y: WORLD_HEIGHT - 165, w: 145, h: 20 },
     {
-      id: 2, x: 430, y: WORLD_HEIGHT - 345, w: 110, h: 20,
+      id: 2,
+      x: 430,
+      y: WORLD_HEIGHT - 345,
+      w: 110,
+      h: 20,
       motion: {
         horizontal: {
           distance: 250,
           speed: 80,
-        }
-      }
+        },
+      },
     },
     {
-      id: 3, x: 610, y: WORLD_HEIGHT - 235, w: 140, h: 20,
+      id: 3,
+      x: 610,
+      y: WORLD_HEIGHT - 235,
+      w: 140,
+      h: 20,
       motion: {
         vertical: {
           distance: 150,
           speed: 80,
-        }
-      }
+        },
+      },
     },
     { id: 4, x: 830, y: WORLD_HEIGHT - 435, w: 120, h: 20 },
     { id: 5, x: 1020, y: WORLD_HEIGHT - 255, w: 130, h: 20 },

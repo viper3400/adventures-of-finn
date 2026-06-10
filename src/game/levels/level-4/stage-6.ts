@@ -8,26 +8,26 @@ const stage6: StageDefinition = {
     surfaceY: WORLD_HEIGHT - GROUND_HEIGHT,
   },
   platforms: [
-    { id: 1, x: 180, y: WORLD_HEIGHT - 190, w: 125, h: 20 },
-    { id: 2, x: 365, y: WORLD_HEIGHT - 360, w: 100, h: 20 },
-    { id: 3, x: 540, y: WORLD_HEIGHT - 210, w: 130, h: 20 },
-    { id: 4, x: 735, y: WORLD_HEIGHT - 455, w: 110, h: 20 },
+    { id: 1, x: 180, y: WORLD_HEIGHT - 170, w: 130, h: 20 },
+    { id: 2, x: 355, y: WORLD_HEIGHT - 285, w: 110, h: 20 },
+    { id: 3, x: 525, y: WORLD_HEIGHT - 385, w: 130, h: 20 },
+    { id: 4, x: 715, y: WORLD_HEIGHT - 285, w: 130, h: 20 },
     {
       id: 5,
-      x: 910,
-      y: WORLD_HEIGHT - 285,
+      x: 900,
+      y: WORLD_HEIGHT - 255,
       w: 130,
       h: 20,
       motion: {
         vertical: {
-          distance: 140,
+          distance: 90,
           speed: 95,
         },
       },
     },
-    { id: 6, x: 1085, y: WORLD_HEIGHT - 215, w: 105, h: 20 },
+    { id: 6, x: 1080, y: WORLD_HEIGHT - 340, w: 110, h: 20 },
   ],
-  goal: { platform: 5, offsetX: 88, width: 64, height: 64 },
+  goal: { platform: 6, offsetX: 80, width: 64, height: 64 },
   objective: {
     type: "transport",
     collectibleVisual: {
@@ -43,12 +43,12 @@ const stage6: StageDefinition = {
       height: 108,
     },
     collectibles: [
-      { platform: 1, offsetX: 58 },
-      { platform: 2, offsetX: 46 },
+      { platform: 1, offsetX: 62 },
+      { platform: 2, offsetX: 54 },
       { platform: 3, offsetX: 64 },
-      { platform: 4, offsetX: 52 },
+      { platform: 4, offsetX: 72 },
       { platform: 5, offsetX: 66 },
-      { platform: 6, offsetX: 48 },
+      { platform: 6, offsetX: 52 },
     ],
   },
   hazards: [
