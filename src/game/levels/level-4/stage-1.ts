@@ -9,9 +9,25 @@ const stage1: StageDefinition = {
   },
   platforms: [
     { id: 1, x: 210, y: WORLD_HEIGHT - 185, w: 170, h: 20 },
-    { id: 2, x: 470, y: WORLD_HEIGHT - 330, w: 130, h: 20 },
+    {
+      id: 2, x: 470, y: WORLD_HEIGHT - 330, w: 130, h: 20,
+      motion: {
+        vertical: {
+          distance: 150,
+          speed: 80,
+        }
+      }
+    },
     { id: 3, x: 690, y: WORLD_HEIGHT - 175, w: 170, h: 20 },
-    { id: 4, x: 940, y: WORLD_HEIGHT - 355, w: 180, h: 20 },
+    {
+      id: 4, x: 940, y: WORLD_HEIGHT - 355, w: 180, h: 20,
+      motion: {
+        vertical: {
+          distance: 150,
+          speed: 80,
+        }
+      }
+    },
   ],
   goal: { platform: 4, offsetX: 126, width: 64, height: 64 },
   objective: {
