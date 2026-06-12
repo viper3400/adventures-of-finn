@@ -34,7 +34,8 @@ export async function startGame(): Promise<void> {
   const app = new Application();
   await app.init({ background: "#87CEEB", resizeTo: window, antialias: true });
   const isTouchDevice =
-    navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
+    navigator.maxTouchPoints > 0 ||
+    window.matchMedia("(pointer: coarse)").matches;
   app.canvas.style.touchAction = "none";
   app.canvas.style.setProperty("-webkit-tap-highlight-color", "transparent");
   document.getElementById("pixi-container")!.appendChild(app.canvas);

@@ -34,7 +34,9 @@ export function createInputController(): InputController {
   let transitionCloseRequested = false;
 
   function isJumpKeyHeld(): boolean {
-    return Boolean(keys[" "] || keys["w"] || keys["arrowup"] || touchJumpPressed);
+    return Boolean(
+      keys[" "] || keys["w"] || keys["arrowup"] || touchJumpPressed,
+    );
   }
 
   function handleKeyDown(event: KeyboardEvent): void {
@@ -120,7 +122,7 @@ export function createInputController(): InputController {
     },
     setTouchJumpPressed(pressed: boolean): void {
       touchJumpPressed = pressed;
-      if (!pressed && !Boolean(keys[" "] || keys["w"] || keys["arrowup"])) {
+      if (!pressed && !(keys[" "] || keys["w"] || keys["arrowup"])) {
         jumpReady = true;
       }
     },

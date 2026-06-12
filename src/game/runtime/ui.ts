@@ -689,7 +689,9 @@ export function createEndScreen(
   prompt.anchor.set(0.5);
   overlay.eventMode = touchEnabled ? "static" : "none";
   overlay.hitArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
-  prompt.text = touchEnabled ? "TIPPE ZURUECK ZUM START" : "SPACE ZURUECK ZUM START";
+  prompt.text = touchEnabled
+    ? "TIPPE ZURUECK ZUM START"
+    : "SPACE ZURUECK ZUM START";
 
   overlay.visible = false;
   overlay.addChild(backdrop);
@@ -1277,9 +1279,10 @@ export function createTouchGameplayOverlay(
 
   function redraw(): void {
     overlay.clear();
-    overlay
-      .rect(0, 0, app.screen.width, app.screen.height)
-      .fill({ color: 0xffffff, alpha: touchEnabled && overlay.visible ? 0.001 : 0 });
+    overlay.rect(0, 0, app.screen.width, app.screen.height).fill({
+      color: 0xffffff,
+      alpha: touchEnabled && overlay.visible ? 0.001 : 0,
+    });
   }
 
   return {
