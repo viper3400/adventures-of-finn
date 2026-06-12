@@ -26,7 +26,12 @@ export interface HurryOverlayController {
 }
 
 export interface TransitionController {
-  show(title: string, subtitle: string, speech: string): void;
+  show(
+    title: string,
+    subtitle: string,
+    speech: string,
+    variant?: "intro" | "complete" | "failure",
+  ): void;
   hide(): void;
   layout(): void;
   update(deltaMs: number): void;
@@ -263,6 +268,67 @@ export function createTransitionOverlay(
   speechBubbleTexture: Sprite["texture"],
 ): TransitionController {
   const SPEECH_REVEAL_MS_PER_CHARACTER = 24;
+  type TransitionVariant = "intro" | "complete" | "failure";
+  const PALETTES: Record<
+    TransitionVariant,
+    {
+      bands: [number, number, number, number];
+      lineAlpha: number;
+      bubbleTint: number;
+      titleFill: number;
+      titleStroke: number;
+      titleShadow: number;
+      subtitleFill: number;
+      subtitleStroke: number;
+      speechFill: number;
+      speechStroke: number;
+      promptFill: number;
+      promptStroke: number;
+    }
+  > = {
+    intro: {
+      bands: [0x120826, 0x2a1050, 0x1a2d74, 0x0e1737],
+      lineAlpha: 0.035,
+      bubbleTint: 0xdfe8ff,
+      titleFill: 0xfff7b1,
+      titleStroke: 0x35115b,
+      titleShadow: 0x0e0624,
+      subtitleFill: 0xb8d8ff,
+      subtitleStroke: 0x10203e,
+      speechFill: 0xe7f0ff,
+      speechStroke: 0x10203e,
+      promptFill: 0xfff48a,
+      promptStroke: 0x35115b,
+    },
+    complete: {
+      bands: [0x102315, 0x1d5c2f, 0x508a2b, 0x17331d],
+      lineAlpha: 0.05,
+      bubbleTint: 0xf8f2cf,
+      titleFill: 0xfff2a6,
+      titleStroke: 0x214f25,
+      titleShadow: 0x0b1d0d,
+      subtitleFill: 0xe8ffb8,
+      subtitleStroke: 0x1d4020,
+      speechFill: 0xfffbdf,
+      speechStroke: 0x29412b,
+      promptFill: 0xffe071,
+      promptStroke: 0x214f25,
+    },
+    failure: {
+      bands: [0x240808, 0x5a1111, 0x7a2a14, 0x261010],
+      lineAlpha: 0.04,
+      bubbleTint: 0xffdfd8,
+      titleFill: 0xffd0c0,
+      titleStroke: 0x5f0d0d,
+      titleShadow: 0x240606,
+      subtitleFill: 0xffc38f,
+      subtitleStroke: 0x4a130b,
+      speechFill: 0xffece7,
+      speechStroke: 0x4a130b,
+      promptFill: 0xffec8a,
+      promptStroke: 0x5f0d0d,
+    },
+  };
   const overlay = new Container();
   const backdrop = new Graphics();
   const title = new Text({
@@ -326,6 +392,7 @@ export function createTransitionOverlay(
   let fullSpeechText = "";
   let visibleCharacterCount = 0;
   let speechRevealAccumulatorMs = 0;
+  let variant: TransitionVariant = "intro";
   overlay.visible = false;
   overlay.addChild(backdrop);
   overlay.addChild(transitionDog);
@@ -336,43 +403,63 @@ export function createTransitionOverlay(
   overlay.addChild(prompt);
   app.stage.addChild(overlay);
 
+  function applyPalette(): void {
+    const palette = PALETTES[variant];
+    title.style.fill = palette.titleFill;
+    title.style.stroke = { color: palette.titleStroke, width: 7 };
+    title.style.dropShadow = {
+      alpha: 1,
+      angle: Math.PI / 4,
+      blur: 0,
+      color: palette.titleShadow,
+      distance: 4,
+    };
+    subtitle.style.fill = palette.subtitleFill;
+    subtitle.style.stroke = { color: palette.subtitleStroke, width: 4 };
+    speech.style.fill = palette.speechFill;
+    speech.style.stroke = { color: palette.speechStroke, width: 4 };
+    prompt.style.fill = palette.promptFill;
+    prompt.style.stroke = { color: palette.promptStroke, width: 5 };
+  }
+
   function layout(): void {
     const bubbleX = Math.max(app.screen.width * 0.37, 300);
     const bubbleY = Math.max(156, app.screen.height * 0.18);
     const bubbleWidth = Math.min(app.screen.width * 0.58, 710);
     const bubbleHeight = Math.min(app.screen.height * 0.4, 310);
+    const palette = PALETTES[variant];
 
     backdrop.clear();
     backdrop
       .rect(0, 0, app.screen.width, app.screen.height)
-      .fill({ color: 0x120826, alpha: 1 })
+      .fill({ color: palette.bands[0], alpha: 1 })
       .rect(0, 0, app.screen.width, app.screen.height * 0.22)
-      .fill({ color: 0x2a1050, alpha: 1 })
+      .fill({ color: palette.bands[1], alpha: 1 })
       .rect(
         0,
         app.screen.height * 0.22,
         app.screen.width,
         app.screen.height * 0.26,
       )
-      .fill({ color: 0x1a2d74, alpha: 1 })
+      .fill({ color: palette.bands[2], alpha: 1 })
       .rect(
         0,
         app.screen.height * 0.48,
         app.screen.width,
         app.screen.height * 0.52,
       )
-      .fill({ color: 0x0e1737, alpha: 1 });
+      .fill({ color: palette.bands[3], alpha: 1 });
 
     for (let y = 0; y < app.screen.height; y += 8) {
       backdrop
         .rect(0, y, app.screen.width, 2)
-        .fill({ color: 0xffffff, alpha: 0.035 });
+        .fill({ color: 0xffffff, alpha: palette.lineAlpha });
     }
 
     transitionSpeechBubble.position.set(bubbleX, bubbleY);
     transitionSpeechBubble.width = bubbleWidth;
     transitionSpeechBubble.height = bubbleHeight;
-    transitionSpeechBubble.tint = 0xdfe8ff;
+    transitionSpeechBubble.tint = palette.bubbleTint;
 
     title.position.set(app.screen.width / 2, 82);
     subtitle.position.set(app.screen.width / 2, 132);
@@ -399,7 +486,14 @@ export function createTransitionOverlay(
   }
 
   return {
-    show(nextTitle: string, nextSubtitle: string, nextSpeech: string): void {
+    show(
+      nextTitle: string,
+      nextSubtitle: string,
+      nextSpeech: string,
+      nextVariant: TransitionVariant = "intro",
+    ): void {
+      variant = nextVariant;
+      applyPalette();
       title.text = nextTitle;
       subtitle.text = nextSubtitle;
       fullSpeechText = nextSpeech;

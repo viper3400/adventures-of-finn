@@ -174,7 +174,7 @@ export async function startGame(): Promise<void> {
       `Level ${levelIndex + 1}`,
       level.name,
     );
-    transition.show(content.title, content.subtitle, content.speech);
+    transition.show(content.title, content.subtitle, content.speech, "intro");
   }
 
   function showLevelComplete(levelIndex: number): void {
@@ -190,7 +190,12 @@ export async function startGame(): Promise<void> {
       "Level geschafft!",
       `${level.name} abgeschlossen - ${completionHint}`,
     );
-    transition.show(content.title, content.subtitle, content.speech);
+    transition.show(
+      content.title,
+      content.subtitle,
+      content.speech,
+      "complete",
+    );
   }
 
   function showGameComplete(levelIndex: number): void {
@@ -214,7 +219,7 @@ export async function startGame(): Promise<void> {
       ? "Die Zeit ist abgelaufen und alle 3 Leben sind weg. Zurueck zu Level 1."
       : `Die Zeit ist abgelaufen. Ein Leben verloren. Noch ${livesRemaining} Leben uebrig.`;
 
-    transition.show("Zu langsam!", subtitle, speech);
+    transition.show("Zu langsam!", subtitle, speech, "failure");
   }
 
   function jumpToNextStageDebug(): void {
