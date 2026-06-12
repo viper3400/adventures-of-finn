@@ -1204,7 +1204,9 @@ export function createTouchGameplayOverlay(
         return;
       }
 
-      event.nativeEvent.preventDefault?.();
+      if ("preventDefault" in event.nativeEvent) {
+        event.nativeEvent.preventDefault();
+      }
       pointerStates.set(event.pointerId, {
         startX: event.global.x,
         startY: event.global.y,
