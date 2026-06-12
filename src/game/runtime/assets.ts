@@ -25,17 +25,23 @@ function withBaseUrl(assetPath: string): string {
 }
 
 export async function loadGameAssets(): Promise<GameAssets> {
-  const playerTexture = await Assets.load(withBaseUrl("/assets/image_comic.png"));
+  const playerTexture = await Assets.load(
+    withBaseUrl("/assets/image_comic.png"),
+  );
   const dogFaceTexture = await Assets.load(withBaseUrl("/assets/dog-face.svg"));
   const titleTexture = await Assets.load(withBaseUrl("/assets/title.png"));
-  const endScreenTexture = await Assets.load(withBaseUrl("/assets/end-screen.png"));
+  const endScreenTexture = await Assets.load(
+    withBaseUrl("/assets/end-screen.png"),
+  );
   const speechBubbleTexture = await Assets.load(
     withBaseUrl("/assets/chat-speech-bubble.svg"),
   );
   const goalClosedTexture = await Assets.load(
     withBaseUrl("/assets/door-closed.svg"),
   );
-  const goalOpenTexture = await Assets.load(withBaseUrl("/assets/door-open.svg"));
+  const goalOpenTexture = await Assets.load(
+    withBaseUrl("/assets/door-open.svg"),
+  );
 
   const collectibleTextures = new Map<string, Texture>();
   const collectibleAssetPaths = Array.from(
