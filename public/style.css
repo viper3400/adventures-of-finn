@@ -3,6 +3,7 @@ body {
     padding: 0;
     color: rgba(255, 255, 255, 0.87);
     background-color: #000000;
+    overscroll-behavior: none;
 }
 
 #app {
@@ -12,4 +13,9 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+#pixi-container,
+#pixi-container canvas {
+    touch-action: none;
 }

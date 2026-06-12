@@ -4,6 +4,11 @@ export interface InputController {
   isJumpPressed(): boolean;
   canStartJump(): boolean;
   markJumpUsed(): void;
+  setTouchMoveDirection(direction: -1 | 0 | 1): void;
+  setTouchJumpPressed(pressed: boolean): void;
+  requestTransitionClose(): void;
+  requestMenuAction(action: "new" | "continue"): void;
+  consumeMenuAction(): "new" | "continue" | null;
   consumeMenuUp(): boolean;
   consumeMenuDown(): boolean;
   consumeMenuLeft(): boolean;
@@ -16,17 +21,20 @@ export interface InputController {
 
 export function createInputController(): InputController {
   const keys: Record<string, boolean> = {};
+  let touchMoveDirection: -1 | 0 | 1 = 0;
+  let touchJumpPressed = false;
   let jumpReady = true;
   let menuUpRequested = false;
   let menuDownRequested = false;
   let menuLeftRequested = false;
   let menuRightRequested = false;
+  let menuActionRequested: "new" | "continue" | null = null;
   let debugToggleRequested = false;
   let stageSkipRequested = false;
   let transitionCloseRequested = false;
 
   function isJumpKeyHeld(): boolean {
-    return Boolean(keys[" "] || keys["w"] || keys["arrowup"]);
+    return Boolean(keys[" "] || keys["w"] || keys["arrowup"] || touchJumpPressed);
   }
 
   function handleKeyDown(event: KeyboardEvent): void {
@@ -75,6 +83,8 @@ export function createInputController(): InputController {
     Object.keys(keys).forEach((key) => {
       keys[key] = false;
     });
+    touchMoveDirection = 0;
+    touchJumpPressed = false;
     jumpReady = true;
   }
 
@@ -94,12 +104,36 @@ export function createInputController(): InputController {
   document.addEventListener("visibilitychange", handleVisibilityChange);
 
   return {
-    isLeftPressed: () => Boolean(keys["arrowleft"] || keys["a"]),
-    isRightPressed: () => Boolean(keys["arrowright"] || keys["d"]),
+    isLeftPressed: () =>
+      Boolean((keys["arrowleft"] || keys["a"]) && touchMoveDirection !== 1) ||
+      touchMoveDirection === -1,
+    isRightPressed: () =>
+      Boolean((keys["arrowright"] || keys["d"]) && touchMoveDirection !== -1) ||
+      touchMoveDirection === 1,
     isJumpPressed: isJumpKeyHeld,
     canStartJump: () => jumpReady && isJumpKeyHeld(),
     markJumpUsed(): void {
       jumpReady = false;
+    },
+    setTouchMoveDirection(direction: -1 | 0 | 1): void {
+      touchMoveDirection = direction;
+    },
+    setTouchJumpPressed(pressed: boolean): void {
+      touchJumpPressed = pressed;
+      if (!pressed && !Boolean(keys[" "] || keys["w"] || keys["arrowup"])) {
+        jumpReady = true;
+      }
+    },
+    requestTransitionClose(): void {
+      transitionCloseRequested = true;
+    },
+    requestMenuAction(action: "new" | "continue"): void {
+      menuActionRequested = action;
+    },
+    consumeMenuAction(): "new" | "continue" | null {
+      const requested = menuActionRequested;
+      menuActionRequested = null;
+      return requested;
     },
     consumeMenuUp(): boolean {
       const requested = menuUpRequested;

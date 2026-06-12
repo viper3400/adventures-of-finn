@@ -1,7 +1,15 @@
-import { Container, Graphics, Sprite, Text, type Application } from "pixi.js";
+import {
+  Container,
+  Graphics,
+  Rectangle,
+  Sprite,
+  Text,
+  type Application,
+} from "pixi.js";
 
 import type { StageObjectiveType } from "../types";
 import { DIFFICULTY_OPTIONS, type GameDifficulty } from "./difficulty";
+import type { InputController } from "./input";
 
 export interface HudState {
   levelIndex: number;
@@ -22,6 +30,12 @@ export interface HudController {
 export interface HurryOverlayController {
   show(): void;
   update(deltaMs: number): void;
+  layout(): void;
+}
+
+export interface TouchGameplayController {
+  show(): void;
+  hide(): void;
   layout(): void;
 }
 
@@ -266,6 +280,8 @@ export function createTransitionOverlay(
   app: Application,
   playerTexture: Sprite["texture"],
   speechBubbleTexture: Sprite["texture"],
+  input: InputController,
+  touchEnabled: boolean,
 ): TransitionController {
   const SPEECH_REVEAL_MS_PER_CHARACTER = 24;
   type TransitionVariant = "intro" | "complete" | "failure";
@@ -386,6 +402,7 @@ export function createTransitionOverlay(
     },
   });
   prompt.anchor.set(0.5);
+  prompt.text = touchEnabled ? "TIPPE WEITER" : "SPACE WEITER";
 
   const transitionDog = new Sprite(playerTexture);
   const transitionSpeechBubble = new Sprite(speechBubbleTexture);
@@ -393,6 +410,7 @@ export function createTransitionOverlay(
   let visibleCharacterCount = 0;
   let speechRevealAccumulatorMs = 0;
   let variant: TransitionVariant = "intro";
+  overlay.eventMode = touchEnabled ? "static" : "none";
   overlay.visible = false;
   overlay.addChild(backdrop);
   overlay.addChild(transitionDog);
@@ -402,6 +420,17 @@ export function createTransitionOverlay(
   overlay.addChild(speech);
   overlay.addChild(prompt);
   app.stage.addChild(overlay);
+  overlay.hitArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
+
+  if (touchEnabled) {
+    overlay.on("pointertap", () => {
+      if (!overlay.visible) {
+        return;
+      }
+
+      input.requestTransitionClose();
+    });
+  }
 
   function applyPalette(): void {
     const palette = PALETTES[variant];
@@ -428,6 +457,7 @@ export function createTransitionOverlay(
     const bubbleWidth = Math.min(app.screen.width * 0.58, 710);
     const bubbleHeight = Math.min(app.screen.height * 0.4, 310);
     const palette = PALETTES[variant];
+    overlay.hitArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
 
     backdrop.clear();
     backdrop
@@ -542,6 +572,8 @@ export function createTransitionOverlay(
 export function createTitleScreen(
   app: Application,
   titleTexture: Sprite["texture"],
+  input: InputController,
+  touchEnabled: boolean,
 ): TitleScreenController {
   const overlay = new Container();
   const backdrop = new Graphics();
@@ -559,6 +591,9 @@ export function createTitleScreen(
 
   titleImage.anchor.set(0.5);
   prompt.anchor.set(0.5);
+  overlay.eventMode = touchEnabled ? "static" : "none";
+  overlay.hitArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
+  prompt.text = touchEnabled ? "TIPPE ZUM STARTEN" : "SPACE START";
 
   overlay.visible = false;
   overlay.addChild(backdrop);
@@ -566,7 +601,18 @@ export function createTitleScreen(
   overlay.addChild(prompt);
   app.stage.addChild(overlay);
 
+  if (touchEnabled) {
+    overlay.on("pointertap", () => {
+      if (!overlay.visible) {
+        return;
+      }
+
+      input.requestTransitionClose();
+    });
+  }
+
   function layout(): void {
+    overlay.hitArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
     backdrop.clear();
     backdrop
       .rect(0, 0, app.screen.width, app.screen.height)
@@ -622,6 +668,8 @@ export function createTitleScreen(
 export function createEndScreen(
   app: Application,
   endScreenTexture: Sprite["texture"],
+  input: InputController,
+  touchEnabled: boolean,
 ): EndScreenController {
   const overlay = new Container();
   const backdrop = new Graphics();
@@ -639,6 +687,9 @@ export function createEndScreen(
 
   endScreenImage.anchor.set(0.5);
   prompt.anchor.set(0.5);
+  overlay.eventMode = touchEnabled ? "static" : "none";
+  overlay.hitArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
+  prompt.text = touchEnabled ? "TIPPE ZURUECK ZUM START" : "SPACE ZURUECK ZUM START";
 
   overlay.visible = false;
   overlay.addChild(backdrop);
@@ -646,7 +697,18 @@ export function createEndScreen(
   overlay.addChild(prompt);
   app.stage.addChild(overlay);
 
+  if (touchEnabled) {
+    overlay.on("pointertap", () => {
+      if (!overlay.visible) {
+        return;
+      }
+
+      input.requestTransitionClose();
+    });
+  }
+
   function layout(): void {
+    overlay.hitArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
     backdrop.clear();
     backdrop
       .rect(0, 0, app.screen.width, app.screen.height)
@@ -702,6 +764,8 @@ export function createEndScreen(
 export function createStartupMenu(
   app: Application,
   titleTexture: Sprite["texture"],
+  input: InputController,
+  touchEnabled: boolean,
 ): StartupMenuController {
   const overlay = new Container();
   const backdrop = new Graphics();
@@ -794,6 +858,10 @@ export function createStartupMenu(
       stroke: { color: 0x10203e, width: 3 },
     },
   });
+  const difficultyLeftHit = new Graphics();
+  const difficultyRightHit = new Graphics();
+  const newGameHit = new Graphics();
+  const continueHit = new Graphics();
 
   heading.anchor.set(0.5);
   hint.anchor.set(0.5);
@@ -820,7 +888,10 @@ export function createStartupMenu(
   }
 
   function refreshOptionStyles(): void {
-    difficultyValue.text = `< ${DIFFICULTY_OPTIONS.find((option) => option.id === selectedDifficulty)?.label ?? "Normal"} >`;
+    const selectedDifficultyLabel =
+      DIFFICULTY_OPTIONS.find((option) => option.id === selectedDifficulty)
+        ?.label ?? "Normal";
+    difficultyValue.text = `< ${selectedDifficultyLabel} >`;
     difficultyLabel.style.fill =
       selectedRow === "difficulty" ? 0xfff48a : 0xc3d9ff;
     difficultyValue.style.fill =
@@ -834,9 +905,14 @@ export function createStartupMenu(
   }
 
   overlay.visible = false;
+  overlay.eventMode = touchEnabled ? "static" : "none";
   overlay.addChild(backdrop);
   overlay.addChild(titleImage);
   overlay.addChild(panel);
+  overlay.addChild(difficultyLeftHit);
+  overlay.addChild(difficultyRightHit);
+  overlay.addChild(newGameHit);
+  overlay.addChild(continueHit);
   overlay.addChild(selector);
   overlay.addChild(heading);
   overlay.addChild(difficultyLabel);
@@ -846,6 +922,74 @@ export function createStartupMenu(
   overlay.addChild(continueDetail);
   overlay.addChild(hint);
   app.stage.addChild(overlay);
+
+  hint.text = touchEnabled
+    ? "TIPPE ZUM WAEHLEN  TIPPE LINKS/RECHTS FUER SCHWIERIGKEIT"
+    : "UP/DOWN WAEHLEN  LEFT/RIGHT SCHWIERIGKEIT  SPACE START";
+
+  if (touchEnabled) {
+    difficultyLeftHit.eventMode = "static";
+    difficultyRightHit.eventMode = "static";
+    newGameHit.eventMode = "static";
+    continueHit.eventMode = "static";
+
+    difficultyLeftHit.on("pointertap", () => {
+      if (!overlay.visible) {
+        return;
+      }
+
+      selectedRow = "difficulty";
+      refreshOptionStyles();
+      selectPreviousDifficulty();
+    });
+    difficultyRightHit.on("pointertap", () => {
+      if (!overlay.visible) {
+        return;
+      }
+
+      selectedRow = "difficulty";
+      refreshOptionStyles();
+      selectNextDifficulty();
+    });
+    newGameHit.on("pointertap", () => {
+      if (!overlay.visible) {
+        return;
+      }
+
+      selectedRow = "new";
+      refreshOptionStyles();
+      input.requestMenuAction("new");
+    });
+    continueHit.on("pointertap", () => {
+      if (!overlay.visible || !canContinue) {
+        return;
+      }
+
+      selectedRow = "continue";
+      refreshOptionStyles();
+      input.requestMenuAction("continue");
+    });
+  }
+
+  function selectPreviousDifficulty(): void {
+    const currentIndex = DIFFICULTY_OPTIONS.findIndex(
+      (option) => option.id === selectedDifficulty,
+    );
+    const nextIndex =
+      (currentIndex - 1 + DIFFICULTY_OPTIONS.length) %
+      DIFFICULTY_OPTIONS.length;
+    selectedDifficulty = DIFFICULTY_OPTIONS[nextIndex].id;
+    refreshOptionStyles();
+  }
+
+  function selectNextDifficulty(): void {
+    const currentIndex = DIFFICULTY_OPTIONS.findIndex(
+      (option) => option.id === selectedDifficulty,
+    );
+    const nextIndex = (currentIndex + 1) % DIFFICULTY_OPTIONS.length;
+    selectedDifficulty = DIFFICULTY_OPTIONS[nextIndex].id;
+    refreshOptionStyles();
+  }
 
   function layout(): void {
     const screenWidth = app.screen.width;
@@ -909,6 +1053,22 @@ export function createStartupMenu(
     continueOption.position.set(screenWidth / 2, panelY + 258);
     continueDetail.position.set(screenWidth / 2, panelY + 292);
     hint.position.set(screenWidth / 2, panelY + panelHeight - 42);
+    difficultyLeftHit.clear();
+    difficultyLeftHit
+      .roundRect(screenWidth / 2 - 170, panelY + 122, 74, 44, 14)
+      .fill({ color: 0xffffff, alpha: touchEnabled ? 0.001 : 0 });
+    difficultyRightHit.clear();
+    difficultyRightHit
+      .roundRect(screenWidth / 2 + 96, panelY + 122, 74, 44, 14)
+      .fill({ color: 0xffffff, alpha: touchEnabled ? 0.001 : 0 });
+    newGameHit.clear();
+    newGameHit
+      .roundRect(screenWidth / 2 - 220, panelY + 180, 440, 44, 14)
+      .fill({ color: 0xffffff, alpha: touchEnabled ? 0.001 : 0 });
+    continueHit.clear();
+    continueHit
+      .roundRect(screenWidth / 2 - 220, panelY + 236, 440, 66, 14)
+      .fill({ color: 0xffffff, alpha: touchEnabled ? 0.001 : 0 });
     syncSelectorPosition();
   }
 
@@ -963,32 +1123,184 @@ export function createStartupMenu(
         return;
       }
 
-      const currentIndex = DIFFICULTY_OPTIONS.findIndex(
-        (option) => option.id === selectedDifficulty,
-      );
-      const nextIndex =
-        (currentIndex - 1 + DIFFICULTY_OPTIONS.length) %
-        DIFFICULTY_OPTIONS.length;
-      selectedDifficulty = DIFFICULTY_OPTIONS[nextIndex].id;
-      refreshOptionStyles();
+      selectPreviousDifficulty();
     },
     selectRight(): void {
       if (selectedRow !== "difficulty") {
         return;
       }
 
-      const currentIndex = DIFFICULTY_OPTIONS.findIndex(
-        (option) => option.id === selectedDifficulty,
-      );
-      const nextIndex = (currentIndex + 1) % DIFFICULTY_OPTIONS.length;
-      selectedDifficulty = DIFFICULTY_OPTIONS[nextIndex].id;
-      refreshOptionStyles();
+      selectNextDifficulty();
     },
     getSelectedAction(): "new" | "continue" {
       return selectedRow === "continue" ? "continue" : "new";
     },
     getSelectedDifficulty(): GameDifficulty {
       return selectedDifficulty;
+    },
+  };
+}
+
+export function createTouchGameplayOverlay(
+  app: Application,
+  input: InputController,
+  getPlayerScreenX: () => number,
+  touchEnabled: boolean,
+): TouchGameplayController {
+  const overlay = new Graphics();
+  const swipeThresholdPx = 42;
+  const swipeDominanceRatio = 1.2;
+  const horizontalDeadZonePx = 24;
+  const pointerStates = new Map<
+    number,
+    {
+      startX: number;
+      startY: number;
+      jumpTriggered: boolean;
+    }
+  >();
+  let movementPointerId: number | null = null;
+  let jumpPointerId: number | null = null;
+
+  function isTouchPointer(pointerType: string | undefined): boolean {
+    return pointerType === "touch" || pointerType === "pen";
+  }
+
+  function updateMovementDirection(pointerId: number, x: number): void {
+    if (movementPointerId !== pointerId) {
+      return;
+    }
+
+    const deltaX = x - getPlayerScreenX();
+    if (Math.abs(deltaX) <= horizontalDeadZonePx) {
+      input.setTouchMoveDirection(0);
+      return;
+    }
+
+    input.setTouchMoveDirection(deltaX < 0 ? -1 : 1);
+  }
+
+  function releasePointer(pointerId: number): void {
+    if (movementPointerId === pointerId) {
+      movementPointerId = null;
+      input.setTouchMoveDirection(0);
+    }
+    if (jumpPointerId === pointerId) {
+      jumpPointerId = null;
+      input.setTouchJumpPressed(false);
+    }
+    pointerStates.delete(pointerId);
+  }
+
+  overlay.eventMode = touchEnabled ? "static" : "none";
+  overlay.visible = false;
+  app.stage.addChild(overlay);
+
+  if (touchEnabled) {
+    overlay.on("pointerdown", (event) => {
+      if (!overlay.visible || !isTouchPointer(event.pointerType)) {
+        return;
+      }
+
+      event.nativeEvent.preventDefault?.();
+      pointerStates.set(event.pointerId, {
+        startX: event.global.x,
+        startY: event.global.y,
+        jumpTriggered: false,
+      });
+
+      if (movementPointerId === null) {
+        movementPointerId = event.pointerId;
+        updateMovementDirection(event.pointerId, event.global.x);
+      }
+    });
+
+    overlay.on("pointermove", (event) => {
+      if (!overlay.visible || !isTouchPointer(event.pointerType)) {
+        return;
+      }
+
+      const state = pointerStates.get(event.pointerId);
+      if (!state) {
+        return;
+      }
+
+      updateMovementDirection(event.pointerId, event.global.x);
+
+      if (state.jumpTriggered) {
+        return;
+      }
+
+      const deltaX = event.global.x - state.startX;
+      const deltaY = event.global.y - state.startY;
+      const upwardDistance = -deltaY;
+      if (
+        upwardDistance < swipeThresholdPx ||
+        upwardDistance <= Math.abs(deltaX) * swipeDominanceRatio
+      ) {
+        return;
+      }
+
+      if (jumpPointerId !== null && jumpPointerId !== event.pointerId) {
+        return;
+      }
+
+      state.jumpTriggered = true;
+      jumpPointerId = event.pointerId;
+      input.setTouchJumpPressed(true);
+    });
+
+    overlay.on("pointerup", (event) => {
+      if (!isTouchPointer(event.pointerType)) {
+        return;
+      }
+
+      releasePointer(event.pointerId);
+    });
+
+    overlay.on("pointerupoutside", (event) => {
+      if (!isTouchPointer(event.pointerType)) {
+        return;
+      }
+
+      releasePointer(event.pointerId);
+    });
+
+    overlay.on("pointercancel", (event) => {
+      if (!isTouchPointer(event.pointerType)) {
+        return;
+      }
+
+      releasePointer(event.pointerId);
+    });
+  }
+
+  function redraw(): void {
+    overlay.clear();
+    overlay
+      .rect(0, 0, app.screen.width, app.screen.height)
+      .fill({ color: 0xffffff, alpha: touchEnabled && overlay.visible ? 0.001 : 0 });
+  }
+
+  return {
+    show(): void {
+      if (!touchEnabled) {
+        return;
+      }
+
+      overlay.visible = true;
+      redraw();
+    },
+    hide(): void {
+      overlay.visible = false;
+      pointerStates.clear();
+      movementPointerId = null;
+      jumpPointerId = null;
+      input.setTouchMoveDirection(0);
+      input.setTouchJumpPressed(false);
+    },
+    layout(): void {
+      redraw();
     },
   };
 }

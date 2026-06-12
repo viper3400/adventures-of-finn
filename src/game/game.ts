@@ -25,6 +25,7 @@ import {
   createHud,
   createHurryOverlay,
   createStartupMenu,
+  createTouchGameplayOverlay,
   createTitleScreen,
   createTransitionOverlay,
 } from "./runtime/ui";
@@ -32,6 +33,10 @@ import {
 export async function startGame(): Promise<void> {
   const app = new Application();
   await app.init({ background: "#87CEEB", resizeTo: window, antialias: true });
+  const isTouchDevice =
+    navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
+  app.canvas.style.touchAction = "none";
+  app.canvas.style.setProperty("-webkit-tap-highlight-color", "transparent");
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
   const assets = await loadGameAssets();
@@ -44,13 +49,30 @@ export async function startGame(): Promise<void> {
 
   const hud = createHud(app, assets.dogFaceTexture);
   const hurryOverlay = createHurryOverlay(app);
-  const titleScreen = createTitleScreen(app, assets.titleTexture);
-  const endScreen = createEndScreen(app, assets.endScreenTexture);
-  const startupMenu = createStartupMenu(app, assets.titleTexture);
+  const titleScreen = createTitleScreen(
+    app,
+    assets.titleTexture,
+    input,
+    isTouchDevice,
+  );
+  const endScreen = createEndScreen(
+    app,
+    assets.endScreenTexture,
+    input,
+    isTouchDevice,
+  );
+  const startupMenu = createStartupMenu(
+    app,
+    assets.titleTexture,
+    input,
+    isTouchDevice,
+  );
   const transition = createTransitionOverlay(
     app,
     assets.playerTexture,
     assets.speechBubbleTexture,
+    input,
+    isTouchDevice,
   );
   const spawnPoint = stageRuntime.getSpawnPoint();
   const player = createPlayer(
@@ -58,6 +80,12 @@ export async function startGame(): Promise<void> {
     assets.playerTexture,
     spawnPoint.x,
     spawnPoint.y,
+  );
+  const touchGameplay = createTouchGameplayOverlay(
+    app,
+    input,
+    () => player.sprite.getGlobalPosition().x,
+    isTouchDevice,
   );
   let lastLevelCompletion: LevelCompletionResult | null = null;
   let previousHurry = false;
@@ -86,6 +114,7 @@ export async function startGame(): Promise<void> {
     endScreen.layout();
     startupMenu.layout();
     transition.layout();
+    touchGameplay.layout();
   }
 
   function resetPlayerToSpawn(): void {
@@ -153,6 +182,11 @@ export async function startGame(): Promise<void> {
       }
     });
     levelSession.setRunning(gameFlow.isPlaying());
+    if (gameFlow.isPlaying()) {
+      touchGameplay.show();
+    } else {
+      touchGameplay.hide();
+    }
     previousHurry = levelSession.isHurry();
     updateHud();
   }
@@ -183,7 +217,8 @@ export async function startGame(): Promise<void> {
       levelSession.getDifficulty(),
     ).label;
     const completionHint = lastLevelCompletion
-      ? `Result ${lastLevelCompletion.elapsedSeconds}s  Schwierigkeit ${difficultyLabel}`
+      ? `Result ${lastLevelCompletion.elapsedSeconds}s  Schwierigkeit ` +
+        difficultyLabel
       : "Result unavailable";
     const content = getTransitionContent(
       level.completion,
@@ -217,7 +252,8 @@ export async function startGame(): Promise<void> {
       : `${level.name} neu starten - noch ${livesRemaining} Leben`;
     const speech = gameOver
       ? "Die Zeit ist abgelaufen und alle 3 Leben sind weg. Zurueck zu Level 1."
-      : `Die Zeit ist abgelaufen. Ein Leben verloren. Noch ${livesRemaining} Leben uebrig.`;
+      : "Die Zeit ist abgelaufen. Ein Leben verloren. Noch " +
+        `${livesRemaining} Leben uebrig.`;
 
     transition.show("Zu langsam!", subtitle, speech, "failure");
   }
@@ -249,6 +285,23 @@ export async function startGame(): Promise<void> {
 
       if (!gameFlow.isPlaying()) {
         if (gameFlow.getState().kind === "menu") {
+          const touchMenuAction = input.consumeMenuAction();
+
+          if (touchMenuAction) {
+            if (touchMenuAction === "new") {
+              progression.resetProgression();
+              levelSession.resetRun();
+              levelSession.setDifficulty(startupMenu.getSelectedDifficulty());
+              applyGameFlowEffects(gameFlow.startNewGame());
+            } else {
+              levelSession.resetRun();
+              levelSession.setDifficulty(startupMenu.getSelectedDifficulty());
+              applyGameFlowEffects(gameFlow.continueGame());
+            }
+            input.markJumpUsed();
+            return;
+          }
+
           if (input.consumeMenuUp()) {
             startupMenu.selectPrevious();
           }
