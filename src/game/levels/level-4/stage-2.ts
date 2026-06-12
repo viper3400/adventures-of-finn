@@ -19,7 +19,7 @@ const stage2: StageDefinition = {
   objective: {
     type: "transport",
     collectibleVisual: {
-      assetPath: "/assets/plate.svg",
+      assetPath: "/assets/football.svg",
       width: 42,
       height: 42,
     },
