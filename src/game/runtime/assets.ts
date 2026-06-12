@@ -16,16 +16,26 @@ export interface GameAssets {
   decorTextures: Map<string, Texture>;
 }
 
+function withBaseUrl(assetPath: string): string {
+  const normalizedBase = import.meta.env.BASE_URL.endsWith("/")
+    ? import.meta.env.BASE_URL.slice(0, -1)
+    : import.meta.env.BASE_URL;
+
+  return `${normalizedBase}${assetPath}`;
+}
+
 export async function loadGameAssets(): Promise<GameAssets> {
-  const playerTexture = await Assets.load("/assets/image_comic.png");
-  const dogFaceTexture = await Assets.load("/assets/dog-face.svg");
-  const titleTexture = await Assets.load("/assets/title.png");
-  const endScreenTexture = await Assets.load("/assets/end-screen.png");
+  const playerTexture = await Assets.load(withBaseUrl("/assets/image_comic.png"));
+  const dogFaceTexture = await Assets.load(withBaseUrl("/assets/dog-face.svg"));
+  const titleTexture = await Assets.load(withBaseUrl("/assets/title.png"));
+  const endScreenTexture = await Assets.load(withBaseUrl("/assets/end-screen.png"));
   const speechBubbleTexture = await Assets.load(
-    "/assets/chat-speech-bubble.svg",
+    withBaseUrl("/assets/chat-speech-bubble.svg"),
   );
-  const goalClosedTexture = await Assets.load("/assets/door-closed.svg");
-  const goalOpenTexture = await Assets.load("/assets/door-open.svg");
+  const goalClosedTexture = await Assets.load(
+    withBaseUrl("/assets/door-closed.svg"),
+  );
+  const goalOpenTexture = await Assets.load(withBaseUrl("/assets/door-open.svg"));
 
   const collectibleTextures = new Map<string, Texture>();
   const collectibleAssetPaths = Array.from(
@@ -38,7 +48,8 @@ export async function loadGameAssets(): Promise<GameAssets> {
 
   const collectibleTextureEntries = await Promise.all(
     collectibleAssetPaths.map(
-      async (assetPath) => [assetPath, await Assets.load(assetPath)] as const,
+      async (assetPath) =>
+        [assetPath, await Assets.load(withBaseUrl(assetPath))] as const,
     ),
   );
   collectibleTextureEntries.forEach(([assetPath, texture]) => {
@@ -58,7 +69,8 @@ export async function loadGameAssets(): Promise<GameAssets> {
 
   const storeTextureEntries = await Promise.all(
     storeAssetPaths.map(
-      async (assetPath) => [assetPath, await Assets.load(assetPath)] as const,
+      async (assetPath) =>
+        [assetPath, await Assets.load(withBaseUrl(assetPath))] as const,
     ),
   );
   storeTextureEntries.forEach(([assetPath, texture]) => {
@@ -77,7 +89,8 @@ export async function loadGameAssets(): Promise<GameAssets> {
   );
   const decorTextureEntries = await Promise.all(
     decorAssetPaths.map(
-      async (assetPath) => [assetPath, await Assets.load(assetPath)] as const,
+      async (assetPath) =>
+        [assetPath, await Assets.load(withBaseUrl(assetPath))] as const,
     ),
   );
   decorTextureEntries.forEach(([assetPath, texture]) => {
