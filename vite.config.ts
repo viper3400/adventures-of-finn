@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
@@ -6,5 +6,10 @@ export default defineConfig(({ command }) => ({
   server: {
     port: 8080,
     open: true,
+  },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    clearMocks: true,
   },
 }));

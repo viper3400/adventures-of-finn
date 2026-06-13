@@ -13,10 +13,7 @@ import {
   GROUND_HEIGHT,
   PLAYER_FEET_HEIGHT,
   PLAYER_FEET_OFFSET_Y,
-  PLAYER_FEET_WIDTH,
-  PLAYER_HEIGHT,
   PLAYER_SUPPORT_OFFSET_X,
-  PLAYER_WIDTH,
   WORLD_HEIGHT,
   WORLD_WIDTH,
 } from "../constants";
@@ -38,6 +35,19 @@ import type {
   StageDefinition,
 } from "../types";
 import type { GameAssets } from "./assets";
+import {
+  getAnchorPlatformBounds,
+  getStandingY,
+  isGoalOpen,
+  isWithinChaseTriggerRadius,
+  playerReachesGoal,
+  playerTouchesCollectible,
+  playerTouchesStore,
+  resolveAnchoredCollectible,
+  resolveAnchoredGoal,
+  resolveAnchoredStore,
+  resolveChaseTrigger,
+} from "./stage-logic";
 
 interface DeliveryEffect {
   ageMs: number;
@@ -364,10 +374,6 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   let chaseCrowStates: ChaseCrowRuntime[] = [];
   let wasGoalOpen = false;
 
-  function getStandingY(surfaceY: number): number {
-    return surfaceY - PLAYER_FEET_OFFSET_Y - PLAYER_FEET_HEIGHT / 2;
-  }
-
   function getCurrentLevel(): LevelDefinition {
     return LEVELS[currentLevelIndex];
   }
@@ -376,42 +382,26 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     return getCurrentLevel().stages[currentStageIndex];
   }
 
-  function getAnchorPlatformBounds(anchorPlatform: PlatformId): {
+  function getPlatformBounds(anchorPlatform: PlatformId): {
     x: number;
     y: number;
     width: number;
     height: number;
   } {
-    if (anchorPlatform === "ground") {
-      return {
-        x: groundLeft,
-        y: groundY,
-        width: groundWidth,
-        height: GROUND_HEIGHT,
-      };
-    }
-
-    const platform = platforms.find(
-      (platformEntry) => platformEntry.id === anchorPlatform,
-    );
-    if (!platform) {
-      throw new Error(`Unknown platform anchor "${anchorPlatform}"`);
-    }
-
-    return {
-      x: platform.x,
-      y: platform.y,
-      width: platform.width,
-      height: platform.height,
-    };
+    return getAnchorPlatformBounds(anchorPlatform, platforms, {
+      id: "ground",
+      x: groundLeft,
+      y: groundY,
+      width: groundWidth,
+      height: GROUND_HEIGHT,
+    });
   }
 
   function resolveGoal(stage: StageDefinition): ResolvedGoal {
-    const platform = getAnchorPlatformBounds(stage.goal.platform);
-    const x = platform.x + stage.goal.offsetX - stage.goal.width / 2;
-    const y = platform.y - stage.goal.height;
-
-    return { x, y, width: stage.goal.width, height: stage.goal.height };
+    return resolveAnchoredGoal(
+      getPlatformBounds(stage.goal.platform),
+      stage.goal,
+    );
   }
 
   function resolveCollectibleFromAnchor(
@@ -419,14 +409,14 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     offsetX: number,
   ): ResolvedCollectible {
     const collectibleVisual = getStageCollectibleVisual(getCurrentStage());
-    const platform = getAnchorPlatformBounds(anchorPlatform);
-
-    return {
-      x: platform.x + offsetX,
-      y: platform.y - collectibleVisual.height / 2 - 8,
-      width: collectibleVisual.width,
-      height: collectibleVisual.height,
-    };
+    return resolveAnchoredCollectible(
+      getPlatformBounds(anchorPlatform),
+      collectibleVisual,
+      {
+        platform: anchorPlatform,
+        offsetX,
+      },
+    );
   }
 
   function resolveCollectibles(stage: StageDefinition): ResolvedCollectible[] {
@@ -444,17 +434,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
       return null;
     }
 
-    const platform = getAnchorPlatformBounds(store.platform);
-    const x = platform.x + store.offsetX - store.width / 2;
-    const y = platform.y - store.height;
-
-    return {
-      x,
-      y,
-      width: store.width,
-      height: store.height,
-      assetPath: store.assetPath,
-    };
+    return resolveAnchoredStore(getPlatformBounds(store.platform), store);
   }
 
   function resolveCheckpoints(stage: StageDefinition): ResolvedCheckpoint[] {
@@ -739,7 +719,10 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
   }
 
   function isGoalCurrentlyOpen(): boolean {
-    return progressCount >= getStageCollectibles(getCurrentStage()).length;
+    return isGoalOpen(
+      progressCount,
+      getStageCollectibles(getCurrentStage()).length,
+    );
   }
 
   function redrawGoal(): void {
@@ -1057,10 +1040,6 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         return false;
       }
 
-      const playerLeft = playerX - PLAYER_WIDTH / 2;
-      const playerRight = playerX + PLAYER_WIDTH / 2;
-      const playerTop = playerY - PLAYER_HEIGHT / 2;
-      const playerBottom = playerY + PLAYER_HEIGHT / 2;
       let didChange = false;
 
       collectibleSprites.forEach((sprite, index) => {
@@ -1069,18 +1048,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         }
 
         const collectible = currentCollectibles[index];
-        const collectibleLeft = collectible.x - collectible.width / 2;
-        const collectibleRight = collectible.x + collectible.width / 2;
-        const collectibleTop = collectible.y - collectible.height / 2;
-        const collectibleBottom = collectible.y + collectible.height / 2;
-
-        const overlaps =
-          playerRight > collectibleLeft &&
-          playerLeft < collectibleRight &&
-          playerBottom > collectibleTop &&
-          playerTop < collectibleBottom;
-
-        if (!overlaps) {
+        if (!playerTouchesCollectible(playerX, playerY, collectible)) {
           return;
         }
 
@@ -1121,18 +1089,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         return false;
       }
 
-      const playerLeft = playerX - PLAYER_WIDTH / 2;
-      const playerRight = playerX + PLAYER_WIDTH / 2;
-      const playerTop = playerY - PLAYER_HEIGHT / 2;
-      const playerBottom = playerY + PLAYER_HEIGHT / 2;
-
-      const overlapsStore =
-        playerRight > currentStore.x &&
-        playerLeft < currentStore.x + currentStore.width &&
-        playerBottom > currentStore.y &&
-        playerTop < currentStore.y + currentStore.height;
-
-      if (!overlapsStore) {
+      if (!playerTouchesStore(playerX, playerY, currentStore)) {
         return false;
       }
 
@@ -1257,9 +1214,15 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
           return;
         }
 
-        const dx = playerX - sprite.x;
-        const dy = playerY - sprite.y;
-        if (Math.hypot(dx, dy) > triggerRadius) {
+        if (
+          !isWithinChaseTriggerRadius(
+            playerX,
+            playerY,
+            sprite.x,
+            sprite.y,
+            triggerRadius,
+          )
+        ) {
           return;
         }
 
@@ -1268,7 +1231,12 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
           return;
         }
 
-        if (chaseState.fleeTargetIndex < crowDefinition.fleeTargets.length) {
+        const chaseTrigger = resolveChaseTrigger(
+          chaseState,
+          crowDefinition.fleeTargets.length,
+        );
+
+        if (chaseTrigger.type === "flee") {
           const nextTarget =
             crowDefinition.fleeTargets[chaseState.fleeTargetIndex];
           const resolvedTarget = resolveCollectibleFromAnchor(
@@ -1276,7 +1244,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
             nextTarget.offsetX,
           );
 
-          chaseState.fleeTargetIndex += 1;
+          chaseState.fleeTargetIndex = chaseTrigger.nextFleeTargetIndex;
           chaseState.fleeingTo = nextTarget;
           chaseState.isFlying = true;
           chaseState.targetX = resolvedTarget.x;
@@ -1427,18 +1395,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         return false;
       }
 
-      const feetLeft = playerX - PLAYER_FEET_WIDTH / 2;
-      const feetRight = playerX + PLAYER_FEET_WIDTH / 2;
-      const feetTop = playerY + PLAYER_FEET_OFFSET_Y - PLAYER_FEET_HEIGHT / 2;
-      const feetBottom =
-        playerY + PLAYER_FEET_OFFSET_Y + PLAYER_FEET_HEIGHT / 2;
-
-      return (
-        feetRight > currentGoal.x &&
-        feetLeft < currentGoal.x + currentGoal.width &&
-        feetBottom > currentGoal.y &&
-        feetTop < currentGoal.y + currentGoal.height
-      );
+      return playerReachesGoal(playerX, playerY, currentGoal);
     },
     blockClosedGoal(player: Player): void {
       void player;

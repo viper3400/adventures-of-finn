@@ -3,8 +3,6 @@ import { Container, Graphics, Rectangle, Sprite, Texture } from "pixi.js";
 import {
   AIR_TILT_FACTOR,
   AIR_TILT_LIMIT,
-  EDGE_BOUNCE_DISTANCE,
-  EDGE_BOUNCE_SMOOTHING,
   GROUND_TILT_SMOOTHING,
   GRAVITY,
   JUMP_POWER,
@@ -13,22 +11,23 @@ import {
   LEG_WALK_ANGLE,
   LEG_WALK_SPEED,
   MOVE_SPEED,
-  PLATFORM_LANDING_TOLERANCE,
-  PLAYER_FEET_HEIGHT,
-  PLAYER_FEET_OFFSET_Y,
-  PLAYER_FEET_WIDTH,
   PLAYER_HEIGHT,
-  PLAYER_SUPPORT_OFFSET_X,
   PLAYER_WIDTH,
   TAIL_WAG_IDLE_ANGLE,
   TAIL_WAG_IDLE_SPEED,
   TAIL_WAG_RUN_ANGLE,
   TAIL_WAG_RUN_SPEED,
   WORLD_HEIGHT,
-  WORLD_WIDTH,
 } from "../constants";
 import type { Platform, Player } from "../types";
 import type { InputController } from "./input";
+import {
+  applyHorizontalWorldBounds,
+  canLandOnPlatform,
+  checkFeetOnPlatform,
+  getLandingY,
+  hasPlatformSupport,
+} from "./player-logic";
 
 export interface PlayerController {
   player: Player;
@@ -161,31 +160,6 @@ export function createPlayer(
   let tailWagPhase = 0;
   let legWalkPhase = 0;
 
-  function checkFeetCollision(
-    playerX: number,
-    playerY: number,
-    platform: Platform,
-  ): boolean {
-    const feetLeft = playerX - PLAYER_FEET_WIDTH / 2;
-    const feetRight = playerX + PLAYER_FEET_WIDTH / 2;
-    const feetTop = playerY + PLAYER_FEET_OFFSET_Y - PLAYER_FEET_HEIGHT / 2;
-    const feetBottom = playerY + PLAYER_FEET_OFFSET_Y + PLAYER_FEET_HEIGHT / 2;
-
-    return (
-      feetRight > platform.x &&
-      feetLeft < platform.x + platform.width &&
-      feetBottom > platform.y &&
-      feetTop < platform.y + platform.height
-    );
-  }
-
-  function hasPlatformSupport(playerX: number, platform: Platform): boolean {
-    const facing = Math.sign(sprite.scale.x) || 1;
-    const supportX = playerX + PLAYER_SUPPORT_OFFSET_X * facing;
-
-    return supportX >= platform.x && supportX <= platform.x + platform.width;
-  }
-
   return {
     player,
     sprite,
@@ -226,20 +200,22 @@ export function createPlayer(
       player.isJumping = true;
 
       platforms.forEach((platform) => {
-        if (!checkFeetCollision(sprite.x, sprite.y, platform)) {
-          return;
-        }
-
-        if (!hasPlatformSupport(sprite.x, platform)) {
+        if (!checkFeetOnPlatform(sprite.x, sprite.y, platform)) {
           return;
         }
 
         if (
-          player.velocityY >= 0 &&
-          previousY + PLAYER_FEET_OFFSET_Y + PLAYER_FEET_HEIGHT / 2 <=
-            platform.y + PLATFORM_LANDING_TOLERANCE
+          !hasPlatformSupport(
+            sprite.x,
+            platform,
+            Math.sign(sprite.scale.x) || 1,
+          )
         ) {
-          sprite.y = platform.y - PLAYER_FEET_OFFSET_Y - PLAYER_FEET_HEIGHT / 2;
+          return;
+        }
+
+        if (canLandOnPlatform(previousY, player.velocityY, platform.y)) {
+          sprite.y = getLandingY(platform.y);
           player.velocityY = 0;
           player.isJumping = false;
         }
@@ -262,19 +238,12 @@ export function createPlayer(
         sprite.rotation += (0 - sprite.rotation) * GROUND_TILT_SMOOTHING;
       }
 
-      const playerHalfWidth = PLAYER_WIDTH / 2;
-      if (sprite.x < playerHalfWidth) {
-        sprite.x = playerHalfWidth;
-        player.edgeBounceOffsetX = EDGE_BOUNCE_DISTANCE;
-      }
-      if (sprite.x > WORLD_WIDTH - playerHalfWidth) {
-        sprite.x = WORLD_WIDTH - playerHalfWidth;
-        player.edgeBounceOffsetX = -EDGE_BOUNCE_DISTANCE;
-      }
-
-      player.edgeBounceOffsetX +=
-        (0 - player.edgeBounceOffsetX) * EDGE_BOUNCE_SMOOTHING;
-      sprite.x += player.edgeBounceOffsetX;
+      const boundedPosition = applyHorizontalWorldBounds(
+        sprite.x,
+        player.edgeBounceOffsetX,
+      );
+      sprite.x = boundedPosition.renderedX;
+      player.edgeBounceOffsetX = boundedPosition.edgeBounceOffsetX;
 
       const isRunning = player.velocityX !== 0;
       tailWagPhase += isRunning ? TAIL_WAG_RUN_SPEED : TAIL_WAG_IDLE_SPEED;

@@ -232,6 +232,24 @@ This file describes the current state of the game implementation and the assumpt
 - Add a small developer-facing reset-progress action if faster test iteration becomes important.
 - Extend state-flow for pause/menu/checkpoint flows before adding hazards or dialogue-heavy sequences.
 
+## Testing
+
+- Unit tests use `Vitest` with the `jsdom` environment.
+- Main test commands are:
+  - `npm test`
+  - `npm run test:watch`
+- After logic changes, also run:
+  - `npm run lint`
+  - `npx tsc --noEmit`
+- Test files currently live beside the modules they cover as `*.test.ts`.
+- Prefer unit tests for deterministic game logic such as:
+  - state-flow transitions
+  - timer/lives/progression controllers
+  - level-schema and level validation rules
+  - pure collision/objective helper logic
+- Avoid pixel assertions and large Pixi scene snapshots for normal unit coverage.
+- If runtime logic inside Pixi-heavy modules needs unit tests, extract the deterministic parts into small pure helpers first instead of mocking large Pixi surfaces.
+
 ## Agent Guidance
 
 - Treat this project as a gameplay prototype with increasingly structured code.
