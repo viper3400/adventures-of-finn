@@ -53,6 +53,7 @@ export async function startGame(): Promise<void> {
   const titleScreen = createTitleScreen(
     app,
     assets.titleTexture,
+    __APP_VERSION__,
     input,
     isTouchDevice,
   );
@@ -65,6 +66,7 @@ export async function startGame(): Promise<void> {
   const startupMenu = createStartupMenu(
     app,
     assets.titleTexture,
+    __APP_VERSION__,
     input,
     isTouchDevice,
   );

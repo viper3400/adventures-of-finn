@@ -43,6 +43,8 @@ jobs:
         run: npm ci
 
       - name: Build site
+        env:
+          APP_VERSION: ${{ github.ref_name }}
         run: npm run build
 
       - name: Configure GitHub Pages

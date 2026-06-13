@@ -81,6 +81,21 @@ export interface StartupMenuController {
   getSelectedDifficulty(): GameDifficulty;
 }
 
+function createVersionLabel(version: string): Text {
+  const label = new Text({
+    text: version,
+    style: {
+      fill: 0xb8d8ff,
+      fontFamily: "Courier New, monospace",
+      fontSize: 14,
+      fontWeight: "700",
+      stroke: { color: 0x10203e, width: 3 },
+    },
+  });
+  label.anchor.set(1, 1);
+  return label;
+}
+
 export function createHud(
   app: Application,
   dogFaceTexture: Sprite["texture"],
@@ -572,12 +587,14 @@ export function createTransitionOverlay(
 export function createTitleScreen(
   app: Application,
   titleTexture: Sprite["texture"],
+  version: string,
   input: InputController,
   touchEnabled: boolean,
 ): TitleScreenController {
   const overlay = new Container();
   const backdrop = new Graphics();
   const titleImage = new Sprite(titleTexture);
+  const versionLabel = createVersionLabel(version);
   const prompt = new Text({
     text: "SPACE START",
     style: {
@@ -598,6 +615,7 @@ export function createTitleScreen(
   overlay.visible = false;
   overlay.addChild(backdrop);
   overlay.addChild(titleImage);
+  overlay.addChild(versionLabel);
   overlay.addChild(prompt);
   app.stage.addChild(overlay);
 
@@ -650,6 +668,7 @@ export function createTitleScreen(
 
     titleImage.scale.set(scale);
     titleImage.position.set(app.screen.width / 2, app.screen.height * 0.45);
+    versionLabel.position.set(app.screen.width - 18, app.screen.height - 18);
     prompt.position.set(app.screen.width / 2, app.screen.height - 72);
   }
 
@@ -766,12 +785,14 @@ export function createEndScreen(
 export function createStartupMenu(
   app: Application,
   titleTexture: Sprite["texture"],
+  version: string,
   input: InputController,
   touchEnabled: boolean,
 ): StartupMenuController {
   const overlay = new Container();
   const backdrop = new Graphics();
   const panel = new Graphics();
+  const versionLabel = createVersionLabel(version);
   const selector = new Text({
     text: "▶",
     style: {
@@ -911,6 +932,7 @@ export function createStartupMenu(
   overlay.addChild(backdrop);
   overlay.addChild(titleImage);
   overlay.addChild(panel);
+  overlay.addChild(versionLabel);
   overlay.addChild(difficultyLeftHit);
   overlay.addChild(difficultyRightHit);
   overlay.addChild(newGameHit);
@@ -1055,6 +1077,7 @@ export function createStartupMenu(
     continueOption.position.set(screenWidth / 2, panelY + 258);
     continueDetail.position.set(screenWidth / 2, panelY + 292);
     hint.position.set(screenWidth / 2, panelY + panelHeight - 42);
+    versionLabel.position.set(screenWidth - 18, screenHeight - 18);
     difficultyLeftHit.clear();
     difficultyLeftHit
       .roundRect(screenWidth / 2 - 170, panelY + 122, 74, 44, 14)
