@@ -1176,12 +1176,14 @@ export function createTouchGameplayOverlay(
   const swipeThresholdPx = 42;
   const swipeDominanceRatio = 1.2;
   const horizontalDeadZonePx = 24;
+  const jumpDirectionRetentionPx = 56;
   const pointerStates = new Map<
     number,
     {
       startX: number;
       startY: number;
       jumpTriggered: boolean;
+      moveDirection: -1 | 0 | 1;
     }
   >();
   let movementPointerId: number | null = null;
@@ -1196,13 +1198,26 @@ export function createTouchGameplayOverlay(
       return;
     }
 
-    const deltaX = x - getPlayerScreenX();
-    if (Math.abs(deltaX) <= horizontalDeadZonePx) {
-      input.setTouchMoveDirection(0);
+    const state = pointerStates.get(pointerId);
+    if (!state) {
       return;
     }
 
-    input.setTouchMoveDirection(deltaX < 0 ? -1 : 1);
+    const deltaX = x - getPlayerScreenX();
+    if (Math.abs(deltaX) <= horizontalDeadZonePx) {
+      const keepCurrentDirection =
+        state.jumpTriggered &&
+        state.moveDirection !== 0 &&
+        Math.abs(deltaX) <= jumpDirectionRetentionPx;
+      if (!keepCurrentDirection) {
+        state.moveDirection = 0;
+        input.setTouchMoveDirection(0);
+      }
+      return;
+    }
+
+    state.moveDirection = deltaX < 0 ? -1 : 1;
+    input.setTouchMoveDirection(state.moveDirection);
   }
 
   function releasePointer(pointerId: number): void {
@@ -1234,6 +1249,7 @@ export function createTouchGameplayOverlay(
         startX: event.global.x,
         startY: event.global.y,
         jumpTriggered: false,
+        moveDirection: 0,
       });
 
       if (movementPointerId === null) {
