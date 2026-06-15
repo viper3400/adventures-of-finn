@@ -16,6 +16,23 @@ const MUSIC_ALIASES = [
   "level-4",
   "level-5",
 ] as const satisfies readonly SoundAlias[];
+const SOUND_DEFINITIONS = [
+  ["jump", "/assets/audio/sfx/retro-jump.mp3"],
+  ["door-open", "/assets/audio/sfx/door-open.mp3"],
+  ["collect", "/assets/audio/sfx/collect.mp3"],
+  ["item-delivered", "/assets/audio/sfx/item-delivered.mp3"],
+  ["crow", "/assets/audio/sfx/crow.mp3"],
+  ["level-complete", "/assets/audio/sfx/level-complete.mp3"],
+  ["title", "/assets/audio/music/title.mp3"],
+  ["end-title", "/assets/audio/music/end-title.mp3"],
+  ["level-intro", "/assets/audio/music/level-intro.mp3"],
+  ["level-outro", "/assets/audio/music/level-outro.mp3"],
+  ["level-1", "/assets/audio/music/level-1.mp3"],
+  ["level-2", "/assets/audio/music/level-2.mp3"],
+  ["level-3", "/assets/audio/music/level-3.mp3"],
+  ["level-4", "/assets/audio/music/level-4.mp3"],
+  ["level-5", "/assets/audio/music/level-5.mp3"],
+] as const satisfies readonly [SoundAlias, string][];
 
 type SoundAlias =
   | "jump"
@@ -31,7 +48,8 @@ type SoundAlias =
   | `level-${1 | 2 | 3 | 4 | 5}`;
 
 export interface AudioController {
-  preload(): Promise<void>;
+  preload(onProgress?: (progress: number) => void): Promise<void>;
+  unlock(): void;
   stopMusic(): void;
   playTitleMusic(): void;
   playEndTitleMusic(): void;
@@ -46,11 +64,15 @@ export interface AudioController {
 }
 
 export function createAudioController(): AudioController {
-  const preloadPromises: Promise<void>[] = [];
+  let preloadPromise: Promise<void> | null = null;
+  let loadedSoundCount = 0;
   let desiredMusicAlias: SoundAlias | null = null;
   let currentMusicAlias: SoundAlias | null = null;
   let currentMusicInstance: IMediaInstance | null = null;
   let musicToken = 0;
+  let preloadProgressListener: ((progress: number) => void) | null = null;
+  let soundsRegistered = false;
+  let hasUnlockedAudio = false;
 
   function ensureContext(): void {
     void sound.context.audioContext.resume().catch(() => {
@@ -58,31 +80,56 @@ export function createAudioController(): AudioController {
     });
   }
 
-  function registerSound(alias: SoundAlias, assetPath: string): void {
-    let resolveLoaded!: () => void;
-    let rejectLoaded!: (error: Error) => void;
-    const loadPromise = new Promise<void>((resolve, reject) => {
-      resolveLoaded = resolve;
-      rejectLoaded = reject;
-    });
-
-    const createdSound = sound.add(alias, {
-      url: withBaseUrl(assetPath),
-      preload: true,
-      loaded: (error) => {
-        if (error) {
-          rejectLoaded(error);
-          return;
-        }
-        resolveLoaded();
-      },
-    });
-
-    if (createdSound.isLoaded) {
-      resolveLoaded();
+  function playDesiredMusicAfterUnlock(): void {
+    if (!desiredMusicAlias || currentMusicInstance) {
+      return;
     }
 
-    preloadPromises.push(loadPromise);
+    if (
+      desiredMusicAlias === "title" ||
+      desiredMusicAlias === "end-title" ||
+      desiredMusicAlias === "level-intro" ||
+      desiredMusicAlias === "level-outro" ||
+      desiredMusicAlias.startsWith("level-")
+    ) {
+      playLoopingMusic(desiredMusicAlias);
+    }
+  }
+
+  function unlockAudio(): void {
+    if (hasUnlockedAudio) {
+      return;
+    }
+
+    hasUnlockedAudio = true;
+    ensureContext();
+    playDesiredMusicAfterUnlock();
+  }
+
+  window.addEventListener("pointerdown", unlockAudio, { once: true });
+  window.addEventListener("keydown", unlockAudio, { once: true });
+  window.addEventListener("touchstart", unlockAudio, { once: true });
+
+  function registerLoadedSounds(
+    soundBuffers: Map<SoundAlias, ArrayBuffer>,
+  ): void {
+    if (soundsRegistered) {
+      return;
+    }
+
+    SOUND_DEFINITIONS.forEach(([alias]) => {
+      const source = soundBuffers.get(alias);
+      if (!source) {
+        throw new Error(`Missing preloaded sound "${alias}"`);
+      }
+
+      sound.add(alias, {
+        source,
+        preload: true,
+      });
+    });
+
+    soundsRegistered = true;
   }
 
   function playEffect(alias: SoundAlias, start = 0): void {
@@ -118,9 +165,11 @@ export function createAudioController(): AudioController {
     };
 
     if (typeof (result as Promise<IMediaInstance>).then === "function") {
-      void (result as Promise<IMediaInstance>).then(attachInstance).catch(() => {
-        // Ignore playback startup errors so the game can continue silently.
-      });
+      void (result as Promise<IMediaInstance>)
+        .then(attachInstance)
+        .catch(() => {
+          // Ignore playback startup errors so the game can continue silently.
+        });
       return;
     }
 
@@ -132,9 +181,13 @@ export function createAudioController(): AudioController {
       return;
     }
 
+    desiredMusicAlias = alias;
+    if (!hasUnlockedAudio) {
+      return;
+    }
+
     ensureContext();
     const token = ++musicToken;
-    desiredMusicAlias = alias;
     stopAllMusicAliases();
     stopCurrentMusicInstance();
     captureMusicInstance(
@@ -163,25 +216,40 @@ export function createAudioController(): AudioController {
     return `level-${levelNumber}`;
   }
 
-  registerSound("jump", "/assets/audio/sfx/retro-jump.mp3");
-  registerSound("door-open", "/assets/audio/sfx/door-open.mp3");
-  registerSound("collect", "/assets/audio/sfx/collect.mp3");
-  registerSound("item-delivered", "/assets/audio/sfx/item-delivered.mp3");
-  registerSound("crow", "/assets/audio/sfx/crow.mp3");
-  registerSound("level-complete", "/assets/audio/sfx/level-complete.mp3");
-  registerSound("title", "/assets/audio/music/title.mp3");
-  registerSound("end-title", "/assets/audio/music/end-title.mp3");
-  registerSound("level-intro", "/assets/audio/music/level-intro.mp3");
-  registerSound("level-outro", "/assets/audio/music/level-outro.mp3");
-  registerSound("level-1", "/assets/audio/music/level-1.mp3");
-  registerSound("level-2", "/assets/audio/music/level-2.mp3");
-  registerSound("level-3", "/assets/audio/music/level-3.mp3");
-  registerSound("level-4", "/assets/audio/music/level-4.mp3");
-  registerSound("level-5", "/assets/audio/music/level-5.mp3");
-
   return {
-    preload(): Promise<void> {
-      return Promise.all(preloadPromises).then(() => undefined);
+    preload(onProgress?: (progress: number) => void): Promise<void> {
+      preloadProgressListener = onProgress ?? null;
+      preloadProgressListener?.(0);
+
+      if (!preloadPromise) {
+        preloadPromise = Promise.all(
+          SOUND_DEFINITIONS.map(async ([alias, assetPath]) => {
+            const response = await fetch(withBaseUrl(assetPath));
+            if (!response.ok) {
+              throw new Error(
+                `Failed to preload sound "${alias}": ${response.status}`,
+              );
+            }
+
+            const buffer = await response.arrayBuffer();
+            loadedSoundCount += 1;
+            preloadProgressListener?.(
+              loadedSoundCount / SOUND_DEFINITIONS.length,
+            );
+            return [alias, buffer] as const;
+          }),
+        ).then((entries) => {
+          registerLoadedSounds(new Map(entries));
+        });
+      }
+
+      return preloadPromise.then(() => {
+        preloadProgressListener?.(1);
+        preloadProgressListener = null;
+      });
+    },
+    unlock(): void {
+      unlockAudio();
     },
     stopMusic(): void {
       desiredMusicAlias = null;
@@ -225,7 +293,9 @@ export function createAudioController(): AudioController {
         );
       };
 
-      if (typeof (completionResult as Promise<IMediaInstance>).then === "function") {
+      if (
+        typeof (completionResult as Promise<IMediaInstance>).then === "function"
+      ) {
         void (completionResult as Promise<IMediaInstance>)
           .then((instance) => {
             instance.once("end", startOutroMusic);

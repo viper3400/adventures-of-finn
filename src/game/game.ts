@@ -31,7 +31,26 @@ import {
   createTransitionOverlay,
 } from "./runtime/ui";
 
-export async function startGame(): Promise<void> {
+export interface StartGameOptions {
+  onLoadProgress?: (progress: number) => void;
+  waitForInteraction?: Promise<void>;
+}
+
+export async function startGame(options: StartGameOptions = {}): Promise<void> {
+  const audio = createAudioController();
+  const assetProgressWeight = 0.72;
+  const audioProgressWeight = 0.28;
+
+  const assets = await loadGameAssets((progress) => {
+    options.onLoadProgress?.(progress * assetProgressWeight);
+  });
+  await audio.preload((progress) => {
+    options.onLoadProgress?.(
+      assetProgressWeight + progress * audioProgressWeight,
+    );
+  });
+  options.onLoadProgress?.(1);
+
   const app = new Application();
   await app.init({ background: "#87CEEB", resizeTo: window, antialias: true });
   const isTouchDevice =
@@ -41,9 +60,6 @@ export async function startGame(): Promise<void> {
   app.canvas.style.setProperty("-webkit-tap-highlight-color", "transparent");
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
-  const assets = await loadGameAssets();
-  const audio = createAudioController();
-  await audio.preload();
   const input = createInputController();
   const stageRuntime = createStageRuntime(
     assets,
@@ -308,6 +324,13 @@ export async function startGame(): Promise<void> {
 
   updateViewport();
   app.renderer.on("resize", updateViewport);
+
+  if (options.waitForInteraction) {
+    await options.waitForInteraction;
+    input.resetState();
+    input.suppressNextTransitionClose();
+  }
+  audio.unlock();
 
   applyGameFlowEffects(
     gameFlow.start(

@@ -4,6 +4,8 @@ export interface InputController {
   isJumpPressed(): boolean;
   canStartJump(): boolean;
   markJumpUsed(): void;
+  resetState(): void;
+  suppressNextTransitionClose(): void;
   setTouchMoveDirection(direction: -1 | 0 | 1): void;
   setTouchJumpPressed(pressed: boolean): void;
   requestTransitionClose(): void;
@@ -32,6 +34,7 @@ export function createInputController(): InputController {
   let debugToggleRequested = false;
   let stageSkipRequested = false;
   let transitionCloseRequested = false;
+  let suppressNextTransitionClose = false;
 
   function isJumpKeyHeld(): boolean {
     return Boolean(
@@ -88,6 +91,15 @@ export function createInputController(): InputController {
     touchMoveDirection = 0;
     touchJumpPressed = false;
     jumpReady = true;
+    menuUpRequested = false;
+    menuDownRequested = false;
+    menuLeftRequested = false;
+    menuRightRequested = false;
+    menuActionRequested = null;
+    debugToggleRequested = false;
+    stageSkipRequested = false;
+    transitionCloseRequested = false;
+    suppressNextTransitionClose = false;
   }
 
   function handleWindowBlur(): void {
@@ -116,6 +128,13 @@ export function createInputController(): InputController {
     canStartJump: () => jumpReady && isJumpKeyHeld(),
     markJumpUsed(): void {
       jumpReady = false;
+    },
+    resetState(): void {
+      resetInputState();
+    },
+    suppressNextTransitionClose(): void {
+      transitionCloseRequested = false;
+      suppressNextTransitionClose = true;
     },
     setTouchMoveDirection(direction: -1 | 0 | 1): void {
       touchMoveDirection = direction;
@@ -168,6 +187,12 @@ export function createInputController(): InputController {
       return requested;
     },
     consumeTransitionClose(): boolean {
+      if (suppressNextTransitionClose) {
+        suppressNextTransitionClose = false;
+        transitionCloseRequested = false;
+        return false;
+      }
+
       const requested = transitionCloseRequested;
       transitionCloseRequested = false;
       return requested;

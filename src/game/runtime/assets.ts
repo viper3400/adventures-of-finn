@@ -17,26 +17,18 @@ export interface GameAssets {
   decorTextures: Map<string, Texture>;
 }
 
-export async function loadGameAssets(): Promise<GameAssets> {
-  const playerTexture = await Assets.load(
-    withBaseUrl("/assets/image_comic.png"),
-  );
-  const dogFaceTexture = await Assets.load(withBaseUrl("/assets/dog-face.svg"));
-  const titleTexture = await Assets.load(withBaseUrl("/assets/title.png"));
-  const endScreenTexture = await Assets.load(
-    withBaseUrl("/assets/end-screen.png"),
-  );
-  const speechBubbleTexture = await Assets.load(
-    withBaseUrl("/assets/chat-speech-bubble.svg"),
-  );
-  const goalClosedTexture = await Assets.load(
-    withBaseUrl("/assets/door-closed.svg"),
-  );
-  const goalOpenTexture = await Assets.load(
-    withBaseUrl("/assets/door-open.svg"),
-  );
-
-  const collectibleTextures = new Map<string, Texture>();
+export async function loadGameAssets(
+  onProgress?: (progress: number) => void,
+): Promise<GameAssets> {
+  const baseAssetPaths = [
+    "/assets/image_comic.png",
+    "/assets/dog-face.svg",
+    "/assets/title.png",
+    "/assets/end-screen.png",
+    "/assets/chat-speech-bubble.svg",
+    "/assets/door-closed.svg",
+    "/assets/door-open.svg",
+  ] as const;
   const collectibleAssetPaths = Array.from(
     new Set(
       LEVELS.flatMap((level) =>
@@ -44,18 +36,6 @@ export async function loadGameAssets(): Promise<GameAssets> {
       ),
     ),
   );
-
-  const collectibleTextureEntries = await Promise.all(
-    collectibleAssetPaths.map(
-      async (assetPath) =>
-        [assetPath, await Assets.load(withBaseUrl(assetPath))] as const,
-    ),
-  );
-  collectibleTextureEntries.forEach(([assetPath, texture]) => {
-    collectibleTextures.set(assetPath, texture);
-  });
-
-  const storeTextures = new Map<string, Texture>();
   const storeAssetPaths = Array.from(
     new Set(
       LEVELS.flatMap((level) =>
@@ -65,18 +45,6 @@ export async function loadGameAssets(): Promise<GameAssets> {
       ),
     ),
   );
-
-  const storeTextureEntries = await Promise.all(
-    storeAssetPaths.map(
-      async (assetPath) =>
-        [assetPath, await Assets.load(withBaseUrl(assetPath))] as const,
-    ),
-  );
-  storeTextureEntries.forEach(([assetPath, texture]) => {
-    storeTextures.set(assetPath, texture);
-  });
-
-  const decorTextures = new Map<string, Texture>();
   const decorAssetPaths = Array.from(
     new Set(
       LEVELS.flatMap((level) =>
@@ -86,24 +54,57 @@ export async function loadGameAssets(): Promise<GameAssets> {
       ),
     ),
   );
-  const decorTextureEntries = await Promise.all(
-    decorAssetPaths.map(
-      async (assetPath) =>
-        [assetPath, await Assets.load(withBaseUrl(assetPath))] as const,
-    ),
-  );
-  decorTextureEntries.forEach(([assetPath, texture]) => {
-    decorTextures.set(assetPath, texture);
+  const allAssetPaths = [
+    ...baseAssetPaths,
+    ...collectibleAssetPaths,
+    ...storeAssetPaths,
+    ...decorAssetPaths,
+  ];
+  const allAssetUrls = allAssetPaths.map(withBaseUrl);
+  const loadedTextures = await Assets.load(allAssetUrls, {
+    onProgress: (progress) => {
+      onProgress?.(progress);
+    },
+  });
+  const textureByPath = new Map<string, Texture>();
+
+  allAssetPaths.forEach((assetPath) => {
+    const assetUrl = withBaseUrl(assetPath);
+    textureByPath.set(assetPath, loadedTextures[assetUrl]);
+  });
+
+  function getTexture(assetPath: string): Texture {
+    const texture = textureByPath.get(assetPath);
+    if (!texture) {
+      throw new Error(`Missing texture "${assetPath}"`);
+    }
+
+    return texture;
+  }
+
+  const collectibleTextures = new Map<string, Texture>();
+  collectibleAssetPaths.forEach((assetPath) => {
+    collectibleTextures.set(assetPath, getTexture(assetPath));
+  });
+
+  const storeTextures = new Map<string, Texture>();
+  storeAssetPaths.forEach((assetPath) => {
+    storeTextures.set(assetPath, getTexture(assetPath));
+  });
+
+  const decorTextures = new Map<string, Texture>();
+  decorAssetPaths.forEach((assetPath) => {
+    decorTextures.set(assetPath, getTexture(assetPath));
   });
 
   return {
-    playerTexture,
-    dogFaceTexture,
-    titleTexture,
-    endScreenTexture,
-    speechBubbleTexture,
-    goalClosedTexture,
-    goalOpenTexture,
+    playerTexture: getTexture("/assets/image_comic.png"),
+    dogFaceTexture: getTexture("/assets/dog-face.svg"),
+    titleTexture: getTexture("/assets/title.png"),
+    endScreenTexture: getTexture("/assets/end-screen.png"),
+    speechBubbleTexture: getTexture("/assets/chat-speech-bubble.svg"),
+    goalClosedTexture: getTexture("/assets/door-closed.svg"),
+    goalOpenTexture: getTexture("/assets/door-open.svg"),
     collectibleTextures,
     storeTextures,
     decorTextures,
