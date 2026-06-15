@@ -42,6 +42,7 @@ export function createPlayer(
   playerTexture: Sprite["texture"],
   spawnX: number,
   spawnY: number,
+  onJump?: () => void,
 ): PlayerController {
   type PartDefinition = {
     frame: Rectangle;
@@ -224,6 +225,7 @@ export function createPlayer(
       if (input.canStartJump() && !player.isJumping) {
         player.velocityY = JUMP_POWER;
         input.markJumpUsed();
+        onJump?.();
       }
 
       if (player.isJumping) {

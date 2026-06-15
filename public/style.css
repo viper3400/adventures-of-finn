@@ -13,9 +13,88 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
 }
 
 #pixi-container,
 #pixi-container canvas {
     touch-action: none;
+}
+
+.loading-screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+    background:
+        radial-gradient(circle at top, rgba(76, 162, 255, 0.26), transparent 42%),
+        linear-gradient(180deg, #050913 0%, #0d1730 55%, #090d18 100%);
+    z-index: 10;
+}
+
+.loading-title {
+    color: #fff1a8;
+    font-family: "Courier New", monospace;
+    font-size: clamp(24px, 4vw, 42px);
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-shadow: 0 0 18px rgba(255, 241, 168, 0.22);
+}
+
+.loading-status {
+    color: #bcd7ff;
+    font-family: "Courier New", monospace;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.loading-hint {
+    color: rgba(188, 215, 255, 0.7);
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: center;
+    max-width: min(520px, calc(100vw - 56px));
+}
+
+.loading-bar {
+    width: min(460px, calc(100vw - 56px));
+    height: 22px;
+    padding: 4px;
+    border: 3px solid #86b8ff;
+    background: rgba(10, 20, 42, 0.95);
+    box-shadow: 0 0 0 4px rgba(38, 81, 150, 0.35);
+}
+
+.loading-bar-fill {
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #4fd4ff 0%, #fff2a4 100%);
+    box-shadow: 0 0 14px rgba(79, 212, 255, 0.42);
+    transition: width 120ms linear;
+}
+
+.loading-screen-ready .loading-title {
+    animation: loadingPulse 1.1s ease-in-out infinite alternate;
+}
+
+.loading-screen-ready .loading-bar {
+    border-color: #fff2a4;
+    box-shadow: 0 0 0 4px rgba(255, 242, 164, 0.18);
+}
+
+@keyframes loadingPulse {
+    from {
+        transform: scale(1);
+        text-shadow: 0 0 18px rgba(255, 241, 168, 0.22);
+    }
+    to {
+        transform: scale(1.03);
+        text-shadow: 0 0 24px rgba(255, 241, 168, 0.38);
+    }
 }
