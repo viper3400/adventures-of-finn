@@ -2,6 +2,7 @@ import { Assets, type Texture } from "pixi.js";
 
 import { getStageCollectibleVisual, getStageStore } from "../level-schema";
 import { LEVELS } from "../levels";
+import { withBaseUrl } from "./asset-url";
 
 export interface GameAssets {
   playerTexture: Texture;
@@ -14,14 +15,6 @@ export interface GameAssets {
   collectibleTextures: Map<string, Texture>;
   storeTextures: Map<string, Texture>;
   decorTextures: Map<string, Texture>;
-}
-
-function withBaseUrl(assetPath: string): string {
-  const normalizedBase = import.meta.env.BASE_URL.endsWith("/")
-    ? import.meta.env.BASE_URL.slice(0, -1)
-    : import.meta.env.BASE_URL;
-
-  return `${normalizedBase}${assetPath}`;
 }
 
 export async function loadGameAssets(): Promise<GameAssets> {

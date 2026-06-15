@@ -7,6 +7,7 @@ import {
 } from "./level-schema";
 import { LEVELS } from "./levels";
 import { loadGameAssets } from "./runtime/assets";
+import { createAudioController } from "./runtime/audio";
 import { getDifficultyOption } from "./runtime/difficulty";
 import { createInputController } from "./runtime/input";
 import {
@@ -41,8 +42,16 @@ export async function startGame(): Promise<void> {
   document.getElementById("pixi-container")!.appendChild(app.canvas);
 
   const assets = await loadGameAssets();
+  const audio = createAudioController();
+  await audio.preload();
   const input = createInputController();
-  const stageRuntime = createStageRuntime(assets);
+  const stageRuntime = createStageRuntime(
+    assets,
+    () => audio.playDoorOpen(),
+    () => audio.playCollect(),
+    () => audio.playDelivered(),
+    () => audio.playCrow(),
+  );
   app.stage.addChild(stageRuntime.gameWorld);
   const gameFlow = createGameFlowController(LEVELS);
   const progression = createProgressionController(LEVELS);
@@ -83,6 +92,7 @@ export async function startGame(): Promise<void> {
     assets.playerTexture,
     spawnPoint.x,
     spawnPoint.y,
+    () => audio.playJump(),
   );
   const touchGameplay = createTouchGameplayOverlay(
     app,
@@ -170,6 +180,7 @@ export async function startGame(): Promise<void> {
           showLevelIntro(effect.levelIndex);
           break;
         case "showLevelComplete":
+          audio.playLevelCompleteTransition();
           showLevelComplete(effect.levelIndex);
           break;
         case "showGameComplete":
@@ -184,6 +195,8 @@ export async function startGame(): Promise<void> {
           break;
       }
     });
+
+    syncMusicToFlowState();
     levelSession.setRunning(gameFlow.isPlaying());
     if (gameFlow.isPlaying()) {
       touchGameplay.show();
@@ -192,6 +205,34 @@ export async function startGame(): Promise<void> {
     }
     previousHurry = levelSession.isHurry();
     updateHud();
+  }
+
+  function syncMusicToFlowState(): void {
+    const flowState = gameFlow.getState();
+
+    switch (flowState.kind) {
+      case "boot":
+        audio.stopMusic();
+        break;
+      case "title":
+      case "menu":
+        audio.playTitleMusic();
+        break;
+      case "levelIntro":
+        audio.playLevelIntroMusic();
+        break;
+      case "playing":
+        audio.playLevelMusic(flowState.stage.levelIndex);
+        break;
+      case "levelComplete":
+        break;
+      case "gameComplete":
+        audio.playEndTitleMusic();
+        break;
+      case "levelFailed":
+        audio.stopMusic();
+        break;
+    }
   }
 
   function showStartupMenu(): void {

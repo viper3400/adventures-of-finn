@@ -107,7 +107,13 @@ export interface StageRuntime {
   blockClosedGoal(player: Player): void;
 }
 
-export function createStageRuntime(assets: GameAssets): StageRuntime {
+export function createStageRuntime(
+  assets: GameAssets,
+  onGoalOpened?: () => void,
+  onCollect?: () => void,
+  onDelivered?: () => void,
+  onCrowTouched?: () => void,
+): StageRuntime {
   const gameWorld = new Container();
   const backgroundGfx = new Graphics();
   const debugLayer = new Container();
@@ -740,6 +746,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
     goalSprite.height = currentGoal.height;
 
     if (isOpen && !wasGoalOpen) {
+      onGoalOpened?.();
       const goalCenterX = currentGoal.x + currentGoal.width / 2;
       const goalCenterY = currentGoal.y + currentGoal.height / 2;
       spawnDeliverySuccessEffect(
@@ -1062,6 +1069,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
           if (carriedCollectibleSprite) {
             carriedCollectibleSprite.visible = true;
           }
+          onCollect?.();
           refreshDebugOverlay();
           didChange = true;
           return;
@@ -1073,6 +1081,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
           collectible.y - collectible.height * 0.2,
         );
         progressCount += 1;
+        onCollect?.();
         redrawGoal();
         refreshDebugOverlay();
         didChange = true;
@@ -1103,6 +1112,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
         currentStore.y + currentStore.height / 2 - 18,
       );
       progressCount += 1;
+      onDelivered?.();
       redrawGoal();
       refreshDebugOverlay();
       return true;
@@ -1235,6 +1245,7 @@ export function createStageRuntime(assets: GameAssets): StageRuntime {
           chaseState,
           crowDefinition.fleeTargets.length,
         );
+        onCrowTouched?.();
 
         if (chaseTrigger.type === "flee") {
           const nextTarget =
