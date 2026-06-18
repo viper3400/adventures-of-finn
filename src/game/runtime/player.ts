@@ -141,11 +141,11 @@ export function createPlayer(
   const frontNearLeg = createPartSprite(frontNearLegDefinition);
 
   sprite.addChild(
-    tail,
     rearFarLeg,
     frontFarLeg,
     bodyMask,
     bodySprite,
+    tail,
     rearNearLeg,
     frontNearLeg,
   );
