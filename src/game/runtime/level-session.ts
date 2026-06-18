@@ -23,8 +23,10 @@ export interface LevelSessionController {
   getDifficulty(): GameDifficulty;
   update(deltaMs: number): LevelTimeoutResult | null;
   completeLevel(): LevelCompletionResult;
-  getLivesRemaining(): number;
-  getTimeRemainingSeconds(): number;
+  hasLives(): boolean;
+  getLivesRemaining(): number | null;
+  hasTimer(): boolean;
+  getTimeRemainingSeconds(): number | null;
   isHurry(): boolean;
   getCurrentLevelIndex(): number | null;
 }
@@ -39,6 +41,7 @@ export function createLevelSessionController(
   let timeRemainingMs = 0;
   let currentFailMs = 0;
   let hurryMs = 0;
+  let elapsedLevelMs = 0;
   let running = false;
   let difficulty = DEFAULT_DIFFICULTY;
 
@@ -50,6 +53,15 @@ export function createLevelSessionController(
     const level = getLevel(levelIndex);
     const option = getDifficultyOption(difficulty);
     currentLevelIndex = levelIndex;
+    elapsedLevelMs = 0;
+
+    if (!option.hasTimer) {
+      currentFailMs = 0;
+      timeRemainingMs = 0;
+      hurryMs = 0;
+      return;
+    }
+
     currentFailMs = Math.round(
       level.timing.failSeconds * option.timerMultiplier * 1000,
     );
@@ -66,6 +78,7 @@ export function createLevelSessionController(
       timeRemainingMs = 0;
       currentFailMs = 0;
       hurryMs = 0;
+      elapsedLevelMs = 0;
       running = false;
     },
     beginLevel(levelIndex: number): void {
@@ -83,6 +96,11 @@ export function createLevelSessionController(
     },
     update(deltaMs: number): LevelTimeoutResult | null {
       if (!running || currentLevelIndex === null) {
+        return null;
+      }
+
+      elapsedLevelMs += deltaMs;
+      if (!getDifficultyOption(difficulty).hasTimer) {
         return null;
       }
 
@@ -113,23 +131,34 @@ export function createLevelSessionController(
       };
     },
     completeLevel(): LevelCompletionResult {
-      const elapsedSeconds = Math.max(
-        0,
-        Math.ceil((currentFailMs - timeRemainingMs) / 1000),
-      );
+      const elapsedSeconds = Math.max(0, Math.ceil(elapsedLevelMs / 1000));
 
       running = false;
 
       return { elapsedSeconds };
     },
-    getLivesRemaining(): number {
-      return livesRemaining;
+    hasLives(): boolean {
+      return getDifficultyOption(difficulty).hasLives;
     },
-    getTimeRemainingSeconds(): number {
+    getLivesRemaining(): number | null {
+      return getDifficultyOption(difficulty).hasLives ? livesRemaining : null;
+    },
+    hasTimer(): boolean {
+      return getDifficultyOption(difficulty).hasTimer;
+    },
+    getTimeRemainingSeconds(): number | null {
+      if (!getDifficultyOption(difficulty).hasTimer) {
+        return null;
+      }
+
       return Math.max(0, Math.ceil(timeRemainingMs / 1000));
     },
     isHurry(): boolean {
-      return running && timeRemainingMs <= hurryMs;
+      return (
+        getDifficultyOption(difficulty).hasTimer &&
+        running &&
+        timeRemainingMs <= hurryMs
+      );
     },
     getCurrentLevelIndex(): number | null {
       return currentLevelIndex;
