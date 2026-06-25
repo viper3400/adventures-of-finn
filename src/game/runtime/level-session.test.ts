@@ -20,6 +20,12 @@ describe("createLevelSessionController", () => {
     controller.setDifficulty("hard");
     controller.beginLevel(0);
     expect(controller.getTimeRemainingSeconds()).toBe(48);
+
+    controller.setDifficulty("zen");
+    controller.beginLevel(0);
+    expect(controller.getTimeRemainingSeconds()).toBeNull();
+    expect(controller.hasTimer()).toBe(false);
+    expect(controller.hasLives()).toBe(false);
   });
 
   it("does not tick timers while not running", () => {
@@ -29,6 +35,20 @@ describe("createLevelSessionController", () => {
 
     expect(controller.update(10_000)).toBeNull();
     expect(controller.getTimeRemainingSeconds()).toBe(60);
+  });
+
+  it("does not time out or spend lives in story mode", () => {
+    const controller = createLevelSessionController(levels);
+
+    controller.setDifficulty("zen");
+    controller.beginLevel(1);
+    controller.setRunning(true);
+
+    expect(controller.update(600_000)).toBeNull();
+    expect(controller.getLivesRemaining()).toBeNull();
+    expect(controller.getTimeRemainingSeconds()).toBeNull();
+    expect(controller.isHurry()).toBe(false);
+    expect(controller.completeLevel()).toEqual({ elapsedSeconds: 600 });
   });
 
   it("enters hurry only while running and under the hurry threshold", () => {

@@ -18,8 +18,8 @@ export interface HudState {
   objectiveType: StageObjectiveType;
   progressCount: number;
   totalCollectibles: number;
-  timeRemainingSeconds: number;
-  livesRemaining: number;
+  timeRemainingSeconds: number | null;
+  livesRemaining: number | null;
   hurry: boolean;
 }
 
@@ -176,20 +176,26 @@ export function createHud(
 
   return {
     update(state: HudState): void {
-      const timerLabel = `Time ${state.timeRemainingSeconds}s`;
+      const timerLabel =
+        state.timeRemainingSeconds === null
+          ? "Time Story"
+          : `Time ${state.timeRemainingSeconds}s`;
       const modeStatus =
         state.objectiveType === "transport"
           ? `Delivered ${state.progressCount}/${state.totalCollectibles}`
           : state.objectiveType === "chase"
             ? `Crows ${state.progressCount}/${state.totalCollectibles}`
             : `Treats ${state.progressCount}/${state.totalCollectibles}`;
+      const livesEnabled = state.livesRemaining !== null;
+      const visibleLives = state.livesRemaining ?? 0;
 
       infoLabel.text = `Level ${state.levelIndex + 1}: ${state.levelName} - ${state.stageName}  ${modeStatus}`;
       timeLabel.text = timerLabel;
       lifeFaces.forEach((face, index) => {
-        face.visible = index < state.livesRemaining;
+        face.visible = livesEnabled && index < visibleLives;
         face.position.set(17 + index * 34, 14);
       });
+      livesLabel.text = livesEnabled ? "Lives" : "Story";
 
       drawBox(
         infoChrome,
@@ -211,9 +217,9 @@ export function createHud(
         livesChrome,
         reservedLivesWidth,
         livesLabel.height,
-        0x26134c,
-        0x162e72,
-        0x6c39c3,
+        livesEnabled ? 0x26134c : 0x0f4d46,
+        livesEnabled ? 0x162e72 : 0x0e2b29,
+        livesEnabled ? 0x6c39c3 : 0x44c7aa,
       );
 
       const infoBoxWidth = infoLabel.width + 40;

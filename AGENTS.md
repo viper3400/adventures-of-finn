@@ -144,11 +144,13 @@ This file describes the current state of the game implementation and the assumpt
   - `Einfach`: 30% more level time
   - `Normal`: baseline level time
   - `Schwer`: 20% less level time
+  - `Story-Mode`: no level timer and no lives
 - Before a new level starts, the game shows a full-screen intro with the level number and level name, and waits for `Space`.
 - After the last stage of a level, the game shows a `Level geschafft!` screen before advancing, and waits for `Space`.
 - If the level timer expires, the player loses one life, sees a failure screen, and the current level restarts from stage 1.
 - The dog currently has 3 lives for a run.
 - If all 3 lives are lost, progression resets and the run restarts from level 1.
+- In `Story-Mode`, the level timer is disabled, the hurry state never triggers, and the run does not use lives or timer-based failure screens.
 - The title screen and the level transition screens are driven from `src/game/runtime/ui.ts`.
 - Runtime progression is explicit:
   - `boot`
@@ -185,6 +187,7 @@ This file describes the current state of the game implementation and the assumpt
 ## HUD
 
 - A simple text label shows the current level name, current stage name, treat progress, goal state, countdown timer, and remaining lives.
+- In `Story-Mode`, the HUD replaces the normal timer/lives behavior with a `Time Story` timer label and a `Story` status badge instead of life icons.
 - HUD text is attached to `app.stage`, not `gameWorld`, so it does not scale with the world.
 - The HUD switches to a hurry warning style when the remaining time falls under the level timing's `hurrySeconds`.
 
