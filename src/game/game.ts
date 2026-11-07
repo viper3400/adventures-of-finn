@@ -122,6 +122,15 @@ export async function startGame(options: StartGameOptions = {}): Promise<void> {
   function updateHud(): void {
     const level = stageRuntime.getCurrentLevel();
     const stage = stageRuntime.getCurrentStage();
+    const status = document.getElementById("game-status");
+    if (status) {
+      status.dataset.levelIndex = String(stageRuntime.getCurrentLevelIndex());
+      status.dataset.stageIndex = String(stageRuntime.getCurrentStageIndex());
+      status.dataset.collected = String(stageRuntime.getProgressCount());
+      status.dataset.collectibleTotal = String(
+        getStageCollectibles(stage).length,
+      );
+    }
 
     hud.update({
       levelIndex: stageRuntime.getCurrentLevelIndex(),

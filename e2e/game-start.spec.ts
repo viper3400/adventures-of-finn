@@ -1,7 +1,9 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Game Startup Flow", () => {
-  test("should transition from loading to playing", async ({ page }) => {
+test.describe("Gameplay E2E", () => {
+  test("starts a new game and collects the first Stage 1 treat", async ({
+    page,
+  }) => {
     const errors: string[] = [];
     page.on("pageerror", (exception) =>
       errors.push(exception.stack ?? exception.message),
@@ -84,6 +86,18 @@ test.describe("Game Startup Flow", () => {
 
     // 11. Verify the playing state.
     await expect(status).toHaveAttribute("data-game-state", "playing");
+    await expect(status).toHaveAttribute("data-level-index", "0");
+    await expect(status).toHaveAttribute("data-stage-index", "0");
+    await expect(status).toHaveAttribute("data-collected", "0");
+    await expect(status).toHaveAttribute("data-collectible-total", "5");
+
+    // Walk to the first ground treat (Stage 1 collectible at x=400).
+    await page.keyboard.down("ArrowRight");
+    await expect(status).toHaveAttribute("data-collected", "1", {
+      timeout: 10_000,
+    });
+    await page.keyboard.up("ArrowRight");
+
     expect(errors).toHaveLength(0);
   });
 });
