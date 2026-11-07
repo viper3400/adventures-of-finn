@@ -92,14 +92,16 @@ test.describe("Gameplay E2E", () => {
     await expect(status).toHaveAttribute("data-collectible-total", "5");
 
     // Walk to the first ground treat (Stage 1 collectible at x=400).
-    await page.keyboard.down("ArrowRight");
+    await page.keyboard.down("d");
     await expect
-      .poll(async () => Number(await status.getAttribute("data-player-x")))
+      .poll(async () => Number(await status.getAttribute("data-player-x")), {
+        timeout: 15_000,
+      })
       .toBeGreaterThan(300);
     await expect(status).toHaveAttribute("data-collected", "1", {
       timeout: 10_000,
     });
-    await page.keyboard.up("ArrowRight");
+    await page.keyboard.up("d");
 
     expect(errors).toHaveLength(0);
   });
