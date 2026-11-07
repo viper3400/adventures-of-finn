@@ -93,6 +93,9 @@ test.describe("Gameplay E2E", () => {
 
     // Walk to the first ground treat (Stage 1 collectible at x=400).
     await page.keyboard.down("ArrowRight");
+    await expect
+      .poll(async () => Number(await status.getAttribute("data-player-x")))
+      .toBeGreaterThan(300);
     await expect(status).toHaveAttribute("data-collected", "1", {
       timeout: 10_000,
     });

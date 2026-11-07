@@ -130,6 +130,7 @@ export async function startGame(options: StartGameOptions = {}): Promise<void> {
       status.dataset.collectibleTotal = String(
         getStageCollectibles(stage).length,
       );
+      status.dataset.playerX = String(Math.round(player.sprite.x));
     }
 
     hud.update({
