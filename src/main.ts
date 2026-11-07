@@ -36,6 +36,9 @@ function updateLoadingProgress(progress: number): void {
   const percent = Math.round(clampedProgress * 100);
   loadingBarFill.style.width = `${percent}%`;
   loadingStatus.textContent = `Preparing assets... ${percent}%`;
+  document
+    .getElementById("game-status")
+    ?.setAttribute("data-game-state", `loading:${percent}`);
 }
 
 updateLoadingProgress(0);
@@ -70,7 +73,9 @@ window.addEventListener("touchstart", beginGameFromLoadingScreen);
 
 void startGame({
   onLoadProgress: (progress) => {
-    updateLoadingProgress(progress);
+    if (!interactionArmed) {
+      updateLoadingProgress(progress);
+    }
     if (progress >= 1 && !interactionArmed) {
       armInteractionPrompt();
     }

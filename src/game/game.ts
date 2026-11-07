@@ -212,6 +212,18 @@ export async function startGame(options: StartGameOptions = {}): Promise<void> {
       }
     });
 
+    const status = document.getElementById("game-status");
+    if (status) {
+      const state = gameFlow.getState().kind;
+      status.dataset.gameState = state;
+      status.textContent = `Game state: ${state}`;
+      if (state === "levelIntro") {
+        status.dataset.transitionReady = String(!transition.isAnimating());
+      } else {
+        delete status.dataset.transitionReady;
+      }
+    }
+
     syncMusicToFlowState();
     levelSession.setRunning(gameFlow.isPlaying());
     if (gameFlow.isPlaying()) {
@@ -345,6 +357,10 @@ export async function startGame(options: StartGameOptions = {}): Promise<void> {
     () => {
       const stageSkipRequested = input.consumeStageSkip();
       transition.update(app.ticker.deltaMS);
+      const status = document.getElementById("game-status");
+      if (status && gameFlow.getState().kind === "levelIntro") {
+        status.dataset.transitionReady = String(!transition.isAnimating());
+      }
 
       if (input.consumeDebugToggle()) {
         stageRuntime.toggleDebug();
