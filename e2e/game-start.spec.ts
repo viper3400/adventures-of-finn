@@ -76,8 +76,10 @@ test.describe("Game Startup Flow", () => {
     // 9. Verify the intro state.
     await expect(status).toHaveAttribute("data-game-state", "levelIntro");
 
-    // 10. Dismiss the intro with Space.
+    // Space first reveals the intro dialogue immediately if it's still animating.
+    await page.keyboard.press("Space");
     await expect(status).toHaveAttribute("data-transition-ready", "true");
+    // Continue only after the transition is ready for a deliberate second press.
     await page.keyboard.press("Space");
 
     // 11. Verify the playing state.
